@@ -13,6 +13,8 @@ const ip_address = "192.168.1.12";
 //TODO: future update
 
 const signInUser = async (data: SignInUserData) => {
+  storage.clearAll();
+  SecretStorage.clearAllSecrets();
 
   try{
     const check1 =  await axios.post(`http://${ip_address}:3002/api/signin/check1`,{

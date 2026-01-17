@@ -13,6 +13,7 @@ const Settings = () => {
   const { colorScheme , setColorScheme } = useColorScheme();
   const { signOut } = React.useContext(AuthContext);
   const { userSettings } = useContext(UserDataContext);
+
   
   const toggleTheme = () => {
     console.log("Toggling theme from Settings.tsx");

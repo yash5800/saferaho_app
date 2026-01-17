@@ -104,7 +104,7 @@ const Index = () => {
               <Swipe 
                  onComplete={() => {
                     setShowSwipe(false);
-                    router.replace("/(login)/signin");
+                    router.push("/(login)/signin");
                  }} 
               />
             </View>

@@ -1,9 +1,12 @@
 import { AuthContext } from '@/components/auth/Auth';
 import { CryptoContext } from '@/components/crypto/Crypto';
+import DynamicBottomSheet from '@/components/DynamicBottomSheet';
 import { displayToast } from '@/util/disToast';
+import { backupRecoveryKeys, recovery2Pdf } from '@/util/recovery2pdf';
 import { registerUser, registerUserExists } from '@/util/registerUser';
+import BottomSheet from '@gorhom/bottom-sheet';
 import { Link, router } from 'expo-router';
-import { ArrowLeft, Eye, EyeOff } from 'lucide-react-native';
+import { ArrowLeft, CloudUpload, Eye, EyeOff, FileCheckCorner, Star } from 'lucide-react-native';
 import React, { useContext } from 'react';
 import { ActivityIndicator, ScrollView, Text, TextInput, TouchableOpacity, useColorScheme, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -53,7 +56,13 @@ const Signup = () => {
   const [enableSignup, setEnableSignup] = React.useState(false);
   const { setAuthenticated } = useContext(AuthContext);
   const [signUpLoading, setSignUpLoading] = React.useState(false);
-    const { setIsLocked } = useContext(CryptoContext);
+  const { setIsLocked } = useContext(CryptoContext);
+  const [recoveryKeys, setRecoveryKeys] = React.useState<string[]>([]);
+  const [showRecoveryKeys, setShowRecoveryKeys] = React.useState(false);
+  const [Dloading, setDLoading] = React.useState(true);
+  const [filePath, setFilePath] = React.useState<string>('');
+
+  const bottomSheetRef = React.useRef<BottomSheet>(null);
 
   function evaluatePasswordStrength(password: string) {
     let strength = 0;
@@ -82,11 +91,36 @@ const Signup = () => {
       if(err.field === 'confirmPassword' && form.confirmPassword.length > 0) return false;
       return true;
     }));
-  }, [form.password, form.userName, form.email, form.confirmPassword, passwordLevel]);
+
+    if (showRecoveryKeys && recoveryKeys.length >= 24) {
+      requestAnimationFrame(() => {
+        bottomSheetRef.current?.expand();
+      });
+    }
+  }, [form.password, form.userName, form.email, form.confirmPassword, passwordLevel, showRecoveryKeys, recoveryKeys]);
 
   function emailIsValid(email: string) {
     return valid.isEmail(email);
   }
+
+  const handleDownload = async (gmail:string, words:string) => {
+    try {
+      setDLoading(true);
+      const dis = await recovery2Pdf(gmail, words);
+      if(dis){
+        setFilePath(dis);
+      }
+    } catch (err) {
+      console.error(err);
+      displayToast({
+        message: 'Failed to generate recovery keys PDF.',
+        type: 'error'
+      });
+      
+    } finally {
+      setDLoading(false);
+    }
+  };
 
   const handleSignup = async () => {
     setSignUpLoading(true);
@@ -96,13 +130,13 @@ const Signup = () => {
       message: 'Signup functionality is implemented...',
       type: 'info'
     });
-
+    
     try{
       const userExists = await registerUserExists(
         form.userName,
         form.email
       );
-
+      
       if(userExists.type === 'error' && userExists.field){
         setInputError((prev) => [...prev, { field: userExists.field as string, message: userExists.message }]);
         return;
@@ -114,15 +148,15 @@ const Signup = () => {
         });
         return;
       }
-
+      
       const res = await registerUser({
         userName: form.userName,
         email: form.email,
         password: form.password
       })
-
+      
       console.log("Registration Result: ", res);
-
+      
       // accountUUID: res.accountUUID,
       // accountName: res.accountName,
       // email: res.email,
@@ -132,18 +166,21 @@ const Signup = () => {
       //   pk_salt: res.pk_salt,
       //   encryptedMasterKey: res.encryptedMasterKey
       // }
-
+      
       //TODO: Store user data and token
-
+      
       displayToast({
         message: 'User registered successfully!',
         type: 'success'
       });
-
-      // Reset form after successful registration
-      setForm({ type: 'RESET_FORM', payload: '' });
-      setAuthenticated(true);
-      setIsLocked(false);
+      
+      console.log("Mnemonic received: ", res.mnemonic);
+      
+      if (res.mnemonic) {
+        handleDownload(form.email, res.mnemonic);
+        setRecoveryKeys(res.mnemonic.split(' '));
+        setShowRecoveryKeys(true);
+      }
 
     }
     catch(error){
@@ -157,8 +194,17 @@ const Signup = () => {
     }
     finally{
       setSignUpLoading(false);
+      setDLoading(false);
     }
 
+  }
+
+  const handleCloseRecoveryKeys = () => {
+    setShowRecoveryKeys(false);
+    // Reset form after successful registration
+    setForm({ type: 'RESET_FORM', payload: '' });
+    setAuthenticated(true);
+    setIsLocked(false);
   }
 
   return (
@@ -170,7 +216,7 @@ const Signup = () => {
             className="absolute left-4 bg-white dark:bg-slate-700 rounded-full p-2"
             onPress={() => router.replace('/(login)')}
           >
-            <ArrowLeft color={colorScheme === 'dark' ? 'white' : 'gray'} />
+            <ArrowLeft color={colorScheme === 'dark' ? 'white' : '#BFBFBF'} />
           </TouchableOpacity>
           <Text className="text-lg font-semibold dark:text-white">
             SafeRaho
@@ -344,6 +390,77 @@ const Signup = () => {
             </View>
           </View>
         </View>
+        <DynamicBottomSheet
+         bottomSheetRef={bottomSheetRef} 
+         snapPoints={['100%']}
+         initialSnapIndex={-1}
+         pressBehavior='none'
+         animationConfig={{ duration: 500 }}
+        >
+          <Text className='flex-1 font-semibold text-lg text-center mb-4 dark:text-white '>
+             {"Preview Recovery Key's "}
+          </Text>
+          <TouchableOpacity className='absolute bg-[#caffb7] top-3 right-3 p-2 rounded-full'>
+              {Dloading ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <View className='justify-center items-center flex-row gap-1'>
+                  <FileCheckCorner color='#35c800' size={14} /> 
+                  <Text className="text-[#35c800] text-sm font-semibold">
+                    Saved
+                  </Text>
+                </View>
+              )}
+          </TouchableOpacity>
+          <View className='flex-1 flex-row justify-center flex-wrap gap-4 mb-6'>
+            {
+              recoveryKeys.map((item, index) => (
+                <View key={index} className="w-1/4 p-2 items-center rounded-md bg-gray-200 dark:bg-gray-700">
+                  <Text className="text-gray-800 dark:text-gray-300">
+                    {item}
+                  </Text>
+                </View>
+              ))
+            }
+          </View>
+          <View
+           className='flex-1 justify-around items-center flex-row mb-5'
+          >
+            <TouchableOpacity
+              className="w-[140px] bg-blue-500 rounded-full py-4 flex-row justify-center items-center gap-2 self-center"
+              onPress={handleCloseRecoveryKeys}
+            >
+              <Text className="text-center text-white font-semibold">
+                Continue
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              className="w-[140px] bg-gray-700 rounded-full py-4 flex-row justify-center items-center gap-2 self-center"
+              onPress={() => backupRecoveryKeys(filePath)}
+            >
+              <CloudUpload color={'white'} size={20}/>
+              <Text className="text-center text-white font-semibold">
+               Back up
+              </Text>
+              <View className='absolute -top-1 -left-1'
+               style={{
+                transform: [{ rotate: '-20deg' }],
+                shadowColor: '#000',
+                shadowOpacity: 0.3,
+                elevation: 5,
+               }}
+              >
+                <Star fill={'yellow'} color={'gold'} />
+              </View>
+            </TouchableOpacity>
+          </View>
+          <Text className='text-sm font-normal text-blue-500 text-center'>
+            Please save the recovery keys document in a safe place. They are essential for account recovery.
+          </Text>
+          <Text className='text-xs font-medium text-green-400 text-center mt-2'>
+            File automatically saved to {filePath}.
+          </Text>
+        </DynamicBottomSheet>
       </ScrollView>
     </SafeAreaView>
   );

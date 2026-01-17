@@ -83,6 +83,10 @@ const registerUser =  async (data: RegisterUserData) => {
 
   const recoveryKeyData = await recoveryKeyGenerator(masterKey, rk_salt);
 
+  const mnemonic = recoveryKeyData.mnemonic;
+
+  console.log("Generated mnemonic for recovery key:", mnemonic);
+
   try{
     const res = await axios.post(`http://${ip_address}:3002/api/signup/register`, {
       accountType: 'general',
@@ -93,7 +97,9 @@ const registerUser =  async (data: RegisterUserData) => {
       rk_salt: rk_salt,
       encryptedRecoveryMasterKey: recoveryKeyData.encryptedRecoveryMasterKey,
       auth_salt: auth_salt,
-      authHash: authHash
+      authHash: authHash,
+      recoveryKeyHashSalt: recoveryKeyData.recoveryKeyHashSalt,
+      recoveryKeyHash: recoveryKeyData.recoveryKeyHash
     });
 
     console.log("Registration response:", res.data);
@@ -113,8 +119,8 @@ const registerUser =  async (data: RegisterUserData) => {
 
       storage.set('userProfile', JSON.stringify(userProfile));
 
-      //TODO : set default settings
-      storage.set('userSeittngs', JSON.stringify({
+      //TODO: set default settings
+      storage.set('userSettings', JSON.stringify({
         darkMode: false,
         biometricAuth: false,
         notificationsEnabled: false,
@@ -123,13 +129,13 @@ const registerUser =  async (data: RegisterUserData) => {
 
       storage.set('accessToken', res.data.tokens.accessToken);
 
-      //TODO : store userValutData
+      //TODO: store userVaultData
 
       // storage.set('userVaultData', JSON.stringify({
       //   // initial vault data structure
       // }));
 
-      // TODO : store user files metadata
+      // TODO: store user files metadata
 
       console.log("Storing masterKeyData and refreshToken in SecretStorage.");
 
@@ -144,6 +150,7 @@ const registerUser =  async (data: RegisterUserData) => {
       return {
         type: 'success',
         userProfile,
+        mnemonic,
         message: 'User registered successfully'
       }
     }

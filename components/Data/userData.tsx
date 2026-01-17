@@ -1,8 +1,9 @@
 import { UserDataContext, UserProfile, UserSettings } from '@/context/mainContext';
 import { SettingsProperties } from '@/Operations/Settings';
+import { storage } from '@/storage/mmkv';
 import { useColorScheme } from 'nativewind';
 import React, { useContext, useEffect, useRef, useState } from 'react';
-import { AppState } from 'react-native';
+import { AppState, AppStateStatus } from 'react-native';
 import { AuthContext } from '../auth/Auth';
 import { CryptoContext } from '../crypto/Crypto';
 import LockScreen from '../LockScreen';
@@ -22,12 +23,13 @@ const UserData = ({ children }: UserDataProps) => {
   const [cryptoFailedAttempts, setCryptoFailedAttempts] = React.useState(0);
   const [showLockScreen, setShowLockScreen] = useState(false);
 
-
   const { setColorScheme } = useColorScheme();
   const { unlock, isLocked , lock } = useContext(CryptoContext);
-  const { isAuthenticated } = useContext(AuthContext);
+  const { isAuthenticated, signOut } = useContext(AuthContext);
 
   const initialUnlockRef = useRef(false);
+  const appStateRef = useRef(AppState.currentState);
+  const LOCK_TIMEOUT = 10000; // 10 seconds
 
   useEffect(() => {
     if(!isAuthenticated) return;
@@ -48,7 +50,7 @@ const UserData = ({ children }: UserDataProps) => {
       console.error('Initial unlock failed:', err);
       setShowLockScreen(true);
     });
-  },[isAuthenticated])
+  },[isAuthenticated,isLocked])
 
   // Monitor authentication status
   useEffect(() => {
@@ -60,16 +62,35 @@ const UserData = ({ children }: UserDataProps) => {
       setColorScheme(storeSettings.darkMode ? 'dark' : 'light');
     }
 
-    const subscription = AppState.addEventListener('change', (nextAppState) => {
-      if(nextAppState === 'inactive' || nextAppState === 'background'){
-        lock();
-        setShowLockScreen(true);
-      }
-    });
+    const subscription = AppState.addEventListener('change', handleAppStateChange);
 
     return () => subscription.remove();
     
   }, [isAuthenticated]);
+
+  const handleAppStateChange = (nextAppState: AppStateStatus) => {
+    console.log('AppState', appStateRef.current, nextAppState);
+
+    if(nextAppState === 'inactive' || nextAppState === 'background'){
+      storage.set('lastAppStateChange', Date.now());
+    }
+    
+    if(nextAppState === 'active' && appStateRef.current === 'background'){
+      const startTime = storage.getNumber('lastAppStateChange');
+      if( startTime && (Date.now() - startTime > LOCK_TIMEOUT) ){
+        lock();
+        setShowLockScreen(true);
+      }
+    }
+    // console.log('AppState changed to:', nextAppState);
+    // if(nextAppState === 'inactive' || nextAppState === 'background'){
+    //   lock();
+    //   setShowLockScreen(true);
+    // }
+
+    appStateRef.current = nextAppState;
+  }
+
 
   // Monitor isLocked changes
   // useEffect(() => {
@@ -86,9 +107,11 @@ const UserData = ({ children }: UserDataProps) => {
   const handleUnlockFail = () => {
     setCryptoFailedAttempts(prev => {
       const next = prev + 1;
-      if (next >= 3) {
+      if (next === 3) {
         console.warn('Maximum unlock attempts reached');
-        lock();
+      } else if (next >= 4){
+        console.warn('Exceeded maximum unlock attempts, logging out');
+        signOut();
       }
       return next;
     });

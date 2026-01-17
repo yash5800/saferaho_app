@@ -10,7 +10,7 @@ const getRandomBytes = async (length: number): Promise<Uint8Array> => {
   return await Random.getRandomBytesAsync(length);
 };
 
-const bytesToHex = (bytes: Uint8Array): string => {
+export const bytesToHex = (bytes: Uint8Array): string => {
   return Array.from(bytes)
     .map((byte) => byte.toString(16).padStart(2, '0'))
     .join('');
@@ -57,6 +57,7 @@ const decryptData = async (
   encryptedData: { cipher: string; nonce: string; mac: string },
   key: string
 ) => {
+  console.log('Decrypting data with key of length:', key , 'and encrypted data:', encryptedData);
   const recalculatedMac = await Aes.hmac256(
     encryptedData.cipher + encryptedData.nonce,
     key
@@ -84,12 +85,30 @@ const recoveryKeyGenerator = async (masterKey: string, salt: string) => {
 
   const recoveryKey = await generateKey(bytesToHex(entropy), salt, 1);
 
+  const recoveryKeyHashSalt = await Aes.randomKey(16);
+  const recoveryKeyHash = await generateKey(recoveryKey, recoveryKeyHashSalt, 1);
+
+  console.log(`Generated recovery key hash: ${recoveryKeyHash}`);
+
   const encryptedRecoveryMasterKey = await encryptData(masterKey, recoveryKey);
 
   return {
     mnemonic,
     encryptedRecoveryMasterKey,
+    recoveryKeyHashSalt,
+    recoveryKeyHash,
   }
+}
+
+const recoveryKeyWords2entropy = (mnemonic: string): Uint8Array => {
+  try{
+    const entropy = mnemonicToEntropy(mnemonic, wordlist);
+    return entropy;
+  }
+  catch(error){
+    throw new Error('Invalid mnemonic phrase');
+  }
+
 }
 
 const recoveryKeyValidator = async (
@@ -106,5 +125,5 @@ const recoveryKeyValidator = async (
   return masterKey;
 }
 
-export { decryptData, encryptData, generateKey, recoveryKeyGenerator, recoveryKeyValidator };
+export { decryptData, encryptData, generateKey, recoveryKeyGenerator, recoveryKeyValidator, recoveryKeyWords2entropy };
 

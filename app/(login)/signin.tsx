@@ -95,11 +95,11 @@ const Signin = () => {
 
           <View className='justify-center items-start mt-3 w-full'>
             <Text className='text-gray-800 dark:text-gray-300 mt-4 text-center font-semibold mb-2'>
-              Email
+              Email / Username
             </Text>
             <TextInput 
               className={'w-full rounded-full text-zinc-900 bg-slate-200 pl-5' + ' placeholder:text-zinc-400 dark:bg-slate-700 dark:text-zinc-100'}
-              placeholder='Enter your email'
+              placeholder='Enter your email/username '
               placeholderTextColor={colorScheme === 'dark' ? '#888888' : '#aaaaaa'}
               keyboardType='email-address'
               autoCapitalize='none'
@@ -146,9 +146,10 @@ const Signin = () => {
               :
               null
             }
-            <Text className='text-base text-gray-600 font-medium mt-3 self-end dark:text-gray-400'>
+            <Link href="/(login)/forgot" className='text-base text-gray-600 font-medium mt-3 self-end dark:text-gray-400'
+            >
               Forgot your password?
-            </Text>
+            </Link>
             <TouchableOpacity
               className='w-full bg-black dark:bg-white rounded-full mt-6 py-4 flex-row justify-center items-center gap-2'
               onPress={handleSignIn}

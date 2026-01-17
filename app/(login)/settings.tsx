@@ -1,18 +1,24 @@
 import { AuthContext } from '@/components/auth/Auth'
 import CustomSwitch from '@/components/CustomSwitch'
+import { UserDataContext } from '@/context/mainContext'
+import { SettingsProperties } from '@/Operations/Settings'
 import { router } from 'expo-router'
 import { ArrowLeft } from 'lucide-react-native'
 import { useColorScheme } from 'nativewind'
-import React from 'react'
+import React, { useContext } from 'react'
 import { ScrollView, Text, TouchableOpacity, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 
 const Settings = () => {
-  const { colorScheme , toggleColorScheme } = useColorScheme();
+  const { colorScheme , setColorScheme } = useColorScheme();
   const { signOut } = React.useContext(AuthContext);
-
+  const { userSettings } = useContext(UserDataContext);
+  
   const toggleTheme = () => {
-    toggleColorScheme();
+    console.log("Toggling theme from Settings.tsx");
+    setColorScheme(colorScheme === 'dark' ? 'light' : 'dark');
+    SettingsProperties.setDarkMode(!(colorScheme === 'dark'));
+    console.log(SettingsProperties.getSettings());
   }
 
   return (

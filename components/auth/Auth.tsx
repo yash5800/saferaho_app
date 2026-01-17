@@ -1,7 +1,7 @@
 import SessionService from '@/services/SessionService';
 import { storage } from '@/storage/mmkv';
 import SecretStorage from '@/storage/SecretStorage';
-import { router } from 'expo-router';
+import { useColorScheme } from 'nativewind';
 import React from 'react';
 
 interface AuthProps {
@@ -18,6 +18,7 @@ export const AuthContext = React.createContext<AuthContextType>({isAuthenticated
 
 const Auth = ({ children }: AuthProps) => {
   const [isAuthenticated, setAuthenticated] = React.useState(false);
+  const { colorScheme , setColorScheme } = useColorScheme();
 
   console.log("Auth Component - Checking session status.");
 
@@ -38,8 +39,7 @@ const Auth = ({ children }: AuthProps) => {
     storage.clearAll();
     SecretStorage.clearAllSecrets();
     setAuthenticated(false);
-
-    router.replace('/(login)');
+    setColorScheme('light');
   }
 
   return (

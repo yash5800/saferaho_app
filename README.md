@@ -1,51 +1,29 @@
-# Welcome to your Expo app 👋
+ 
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+# Day 3 (client + backend)
+- Designed Signup page in client to register user and validate each input before sending to server 
+  generating masterKey by user password
+  generating authHash with user password
+  encrypting masterKey with user password(password Key with pbkdf2)
+  encrypting masterKey with recoveryKey(24 recovery words with bip39)
+- Implemented Sign up on backend endpoints (check,register)
+  check ~ user email or username exists or not
+  register ~ storing all encrypted data of new user
 
-## Get started
+# Day 4 (client + backend)
+- Designed Signin page and client side validations before sending to server
+- Implemeted Sign In on backend endpoints (check1,check2)
+  check1 ~ userExists or not before next phase and send Authsalt
+  check2 ~ validate client AuthHash and server AuthHash of user later sending session Tokens
 
-1. Install dependencies
+# Day 5 (client + backend)
+- added Session validation Layer for auto login with SessionService Class
+- implemeted Session Validation in backend API endpoints (signin / signup) generating accesToken for 15mins and refreshToken 7days
 
-   ```bash
-   npm install
-   ```
+# Day 6 (client)
+- added biomatic / password lock in UserData Layer, when app is closed / background (major)
+- adjusted session / JWT validation Class to refreshToken working
+- implemented basic storing settings of user in mmkv with StorageSerives class 
 
-2. Start the app
 
-   ```bash
-   npx expo start
-   ```
-
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
-
-```bash
-npm run reset-project
-```
-
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
-
-## Learn more
-
-To learn more about developing your project with Expo, look at the following resources:
-
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
-
-## Join the community
-
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
-# saferaho_app
+expo-router generate
