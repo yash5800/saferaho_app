@@ -1,8 +1,8 @@
-import SessionService from '@/services/SessionService';
-import { storage } from '@/storage/mmkv';
-import SecretStorage from '@/storage/SecretStorage';
-import { useColorScheme } from 'nativewind';
-import React from 'react';
+import SessionService from "@/services/SessionService";
+import { storage } from "@/storage/mmkv";
+import SecretStorage from "@/storage/SecretStorage";
+import { useColorScheme } from "nativewind";
+import React from "react";
 
 interface AuthProps {
   children: React.ReactNode;
@@ -14,24 +14,27 @@ interface AuthContextType {
   signOut: () => void;
 }
 
-export const AuthContext = React.createContext<AuthContextType>({isAuthenticated: false, setAuthenticated: () => {}, signOut: () => {}});
+export const AuthContext = React.createContext<AuthContextType>({
+  isAuthenticated: false,
+  setAuthenticated: () => {},
+  signOut: () => {},
+});
 
 const Auth = ({ children }: AuthProps) => {
   const [isAuthenticated, setAuthenticated] = React.useState(false);
-  const { colorScheme , setColorScheme } = useColorScheme();
+  const { colorScheme, setColorScheme } = useColorScheme();
 
   console.log("Auth Component - Checking session status.");
 
   React.useEffect(() => {
     const sessionStatus = async () => {
       const status = await SessionService.checkSession();
-      if(status){
+      if (status) {
         setAuthenticated(true);
-      }
-      else{
+      } else {
         setAuthenticated(false);
       }
-    }
+    };
     sessionStatus();
   }, []);
 
@@ -39,14 +42,16 @@ const Auth = ({ children }: AuthProps) => {
     storage.clearAll();
     SecretStorage.clearAllSecrets();
     setAuthenticated(false);
-    setColorScheme('light');
-  }
+    setColorScheme("system");
+  };
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated, setAuthenticated , signOut: signOut }}>
+    <AuthContext.Provider
+      value={{ isAuthenticated, setAuthenticated, signOut: signOut }}
+    >
       {children}
     </AuthContext.Provider>
-  )
-}
+  );
+};
 
-export default Auth
+export default Auth;

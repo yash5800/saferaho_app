@@ -1,6 +1,9 @@
-import BottomSheet, { BottomSheetBackdrop, BottomSheetView } from '@gorhom/bottom-sheet';
-import { useColorScheme } from 'nativewind';
-import React, { useCallback } from 'react';
+import BottomSheet, {
+  BottomSheetBackdrop,
+  BottomSheetView,
+} from "@gorhom/bottom-sheet";
+import { useColorScheme } from "nativewind";
+import React, { useCallback } from "react";
 
 interface DynamicBottomSheetProps {
   bottomSheetRef: React.RefObject<BottomSheet | null>;
@@ -9,21 +12,21 @@ interface DynamicBottomSheetProps {
   children: React.ReactNode;
   handleClose?: () => void;
   enablePanDownToClose?: boolean;
-  pressBehavior?: 'close' | 'none';
-  animationConfig?: { duration: number }
+  pressBehavior?: "close" | "none";
+  animationConfig?: { duration: number };
+  props?: any;
 }
 
-
 const DynamicBottomSheet = ({
-  bottomSheetRef, 
-  snapPoints = ['25%', '50%', '75%','100%'],
-  initialSnapIndex = 4, 
+  bottomSheetRef,
+  snapPoints = ["25%", "50%", "75%", "100%"],
+  initialSnapIndex = 4,
   children,
   enablePanDownToClose = false,
-  pressBehavior = 'close',
-  animationConfig = { duration: 300}
+  pressBehavior = "close",
+  animationConfig = { duration: 300 },
+  props,
 }: DynamicBottomSheetProps) => {
-  
   const { colorScheme } = useColorScheme();
 
   const renderBackdrop = useCallback(
@@ -36,7 +39,7 @@ const DynamicBottomSheet = ({
         pressBehavior={pressBehavior}
       />
     ),
-    [pressBehavior]
+    [pressBehavior],
   );
 
   return (
@@ -45,16 +48,19 @@ const DynamicBottomSheet = ({
       snapPoints={snapPoints}
       index={initialSnapIndex}
       backdropComponent={renderBackdrop}
-      enablePanDownToClose = {enablePanDownToClose}
-      backgroundStyle={{ backgroundColor: colorScheme === 'dark' ? '#181818' : '#f3f4f6' }}
-      handleIndicatorStyle={{ backgroundColor: colorScheme === 'dark' ? '#9ca3af' : '#6b7280' }}
+      enablePanDownToClose={enablePanDownToClose}
+      backgroundStyle={{
+        backgroundColor: colorScheme === "dark" ? "#181818" : "#f3f4f6",
+      }}
+      handleIndicatorStyle={{
+        backgroundColor: colorScheme === "dark" ? "#9ca3af" : "#6b7280",
+      }}
       animationConfigs={animationConfig}
+      {...props}
     >
-      <BottomSheetView style={{ padding: 16 }}>
-        {children}
-      </BottomSheetView>
+      <BottomSheetView style={{ padding: 16 }}>{children}</BottomSheetView>
     </BottomSheet>
-  )
-}
+  );
+};
 
-export default DynamicBottomSheet
+export default DynamicBottomSheet;

@@ -3,7 +3,7 @@ import { Stack } from "expo-router";
 import React from "react";
 
 function StackNavigator() {
-  const { isAuthenticated} = React.useContext(AuthContext);
+  const { isAuthenticated } = React.useContext(AuthContext);
   // const { isLocked} = React.useContext(CryptoContext);
 
   return (
@@ -19,4 +19,4 @@ function StackNavigator() {
   );
 }
 
-export default StackNavigator ;
+export default StackNavigator;

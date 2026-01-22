@@ -1,12 +1,20 @@
 import { Feather } from "@expo/vector-icons";
+import { Vault } from "lucide-react-native";
 
-type TabRouteName = 'home' | 'explore' | 'profile';
+type TabRouteName = "home" | "vault" | "profile";
 
 const icons = {
-    home: (props: any) => <Feather name='home' size={24} color={'#222'} {...props} />,
-    explore: (props: any) => <Feather name='compass' size={24} color={'#222'} {...props} />,
-    profile: (props: any) => <Feather name='user' size={24} color={'#222'} {...props} />
-}
+  home: (props: any) => (
+    <Feather name="home" size={24} color={"#222"} {...props} />
+  ),
+  vault: (props: any) => <Vault size={24} color={"#222"} {...props} />,
+  files: (props: any) => (
+    <Feather name="folder" size={24} color={"#222"} {...props} />
+  ),
+  profile: (props: any) => (
+    <Feather name="user" size={24} color={"#222"} {...props} />
+  ),
+};
 
 export const getIcon = (routeName: string) => {
   if (routeName in icons) {

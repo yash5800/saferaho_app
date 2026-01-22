@@ -1,10 +1,13 @@
-import { entropyToMnemonic, mnemonicToEntropy } from 'ethereum-cryptography/bip39';
-import Aes from 'react-native-aes-crypto';
+import {
+  entropyToMnemonic,
+  mnemonicToEntropy,
+} from "ethereum-cryptography/bip39";
+import Aes from "react-native-aes-crypto";
 
 // const entropy = bip39.mnemonicToEntropy(mnemonic);
 
-import { wordlist } from 'ethereum-cryptography/bip39/wordlists/english';
-import * as Random from 'expo-random';
+import { wordlist } from "ethereum-cryptography/bip39/wordlists/english";
+import * as Random from "expo-random";
 
 const getRandomBytes = async (length: number): Promise<Uint8Array> => {
   return await Random.getRandomBytesAsync(length);
@@ -12,17 +15,17 @@ const getRandomBytes = async (length: number): Promise<Uint8Array> => {
 
 export const bytesToHex = (bytes: Uint8Array): string => {
   return Array.from(bytes)
-    .map((byte) => byte.toString(16).padStart(2, '0'))
-    .join('');
-}
+    .map((byte) => byte.toString(16).padStart(2, "0"))
+    .join("");
+};
 
 const generateKey = async (
   text: string,
   salt: string,
   cost = 100_000,
-  length = 256
+  length = 256,
 ) => {
-  const key = await Aes.pbkdf2(text, salt, cost, length, 'sha256');
+  const key = await Aes.pbkdf2(text, salt, cost, length, "sha256");
 
   console.log(`Generated key of length: ${key.length / 2} bytes`);
 
@@ -36,12 +39,7 @@ const generateKey = async (
 const encryptData = async (text: string, key: string) => {
   const nonce = await Aes.randomKey(16);
 
-  const cipher = await Aes.encrypt(
-    text,
-    key,
-    nonce,
-    'aes-256-cbc'
-  )
+  const cipher = await Aes.encrypt(text, key, nonce, "aes-256-cbc");
 
   const mac = await Aes.hmac256(cipher + nonce, key);
 
@@ -49,29 +47,33 @@ const encryptData = async (text: string, key: string) => {
     cipher,
     nonce,
     mac,
-  }
-
-}
+  };
+};
 
 const decryptData = async (
   encryptedData: { cipher: string; nonce: string; mac: string },
-  key: string
+  key: string,
 ) => {
-  console.log('Decrypting data with key of length:', key , 'and encrypted data:', encryptedData);
+  console.log(
+    "Decrypting data with key of length:",
+    key,
+    "and encrypted data:",
+    encryptedData,
+  );
   const recalculatedMac = await Aes.hmac256(
     encryptedData.cipher + encryptedData.nonce,
-    key
+    key,
   );
 
   if (recalculatedMac !== encryptedData.mac) {
-    throw new Error('Data integrity check failed: MAC mismatch');
+    throw new Error("Data integrity check failed: MAC mismatch");
   }
 
   const decryptedText = await Aes.decrypt(
     encryptedData.cipher,
     key,
     encryptedData.nonce,
-    'aes-256-cbc'
+    "aes-256-cbc",
   );
 
   return decryptedText;
@@ -86,7 +88,11 @@ const recoveryKeyGenerator = async (masterKey: string, salt: string) => {
   const recoveryKey = await generateKey(bytesToHex(entropy), salt, 1);
 
   const recoveryKeyHashSalt = await Aes.randomKey(16);
-  const recoveryKeyHash = await generateKey(recoveryKey, recoveryKeyHashSalt, 1);
+  const recoveryKeyHash = await generateKey(
+    recoveryKey,
+    recoveryKeyHashSalt,
+    1,
+  );
 
   console.log(`Generated recovery key hash: ${recoveryKeyHash}`);
 
@@ -97,24 +103,22 @@ const recoveryKeyGenerator = async (masterKey: string, salt: string) => {
     encryptedRecoveryMasterKey,
     recoveryKeyHashSalt,
     recoveryKeyHash,
-  }
-}
+  };
+};
 
 const recoveryKeyWords2entropy = (mnemonic: string): Uint8Array => {
-  try{
+  try {
     const entropy = mnemonicToEntropy(mnemonic, wordlist);
     return entropy;
+  } catch (error) {
+    throw new Error("Invalid mnemonic phrase");
   }
-  catch(error){
-    throw new Error('Invalid mnemonic phrase');
-  }
-
-}
+};
 
 const recoveryKeyValidator = async (
   mnemonic: string,
   rk_salt: string,
-  encryptedRecoveryMasterKey: { cipher: string; nonce: string; mac: string }
+  encryptedRecoveryMasterKey: { cipher: string; nonce: string; mac: string },
 ) => {
   const entropy = mnemonicToEntropy(mnemonic, wordlist);
 
@@ -123,7 +127,14 @@ const recoveryKeyValidator = async (
   const masterKey = await decryptData(encryptedRecoveryMasterKey, recoveryKey);
 
   return masterKey;
-}
+};
 
-export { decryptData, encryptData, generateKey, recoveryKeyGenerator, recoveryKeyValidator, recoveryKeyWords2entropy };
+export {
+  decryptData,
+  encryptData,
+  generateKey,
+  recoveryKeyGenerator,
+  recoveryKeyValidator,
+  recoveryKeyWords2entropy
+};
 
