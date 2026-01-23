@@ -1,10 +1,14 @@
+import Gallery from "@/components/files/Gallery";
 import UploadOverlay from "@/components/files/UploadOverlay";
 import SettingsOverlay from "@/components/SettingsOverlay";
-import { UserDataContext } from "@/context/mainContext";
+import { FilesContext, UserDataContext } from "@/context/mainContext";
 import { showExploreHeader } from "@/lib/exploreHeaderContoller";
 import { hideTabBar, showTabBar } from "@/lib/tabBarContoller";
-import { getFilesMetadata } from "@/util/filesOperations/filesGet";
-import { formatSize } from "@/util/filesOperations/fileSize";
+import {
+  getFilePreviewMetadata,
+  getFilesMetadata,
+} from "@/util/filesOperations/filesGet";
+import { EncryptedPreviewPayload } from "@/util/filesOperations/preview";
 import BottomSheet from "@gorhom/bottom-sheet";
 import { Box, Heart, SearchIcon, Settings } from "lucide-react-native";
 import { useColorScheme } from "nativewind";
@@ -31,20 +35,34 @@ const cetogeryList = [
 const Files = () => {
   const { userFilesMetadata, setUserFilesMetadata, userProfile } =
     useContext(UserDataContext);
+  const [previewsByFieldId, setPreviewsByFieldId] = React.useState<
+    Record<string, EncryptedPreviewPayload>
+  >({});
   const uploadRef = React.useRef<BottomSheet>(null);
   const settingRef = React.useRef<BottomSheet>(null);
   const lastY = useSharedValue(0);
   const { colorScheme } = useColorScheme();
-  const [activeCategory, setActiveCategory] = React.useState("All");
 
   useEffect(() => {
     const fetchFilesMetadata = async () => {
-      if (userProfile && userProfile.id) {
-        const filesMetadata = await getFilesMetadata(userProfile.id);
+      if (!userProfile?.id) return;
 
-        console.log("Fetched files metadata:", filesMetadata);
-        setUserFilesMetadata(filesMetadata);
+      const filesMetadata = await getFilesMetadata(userProfile.id);
+      setUserFilesMetadata(filesMetadata);
+      console.log("Fetched user files metadata:", filesMetadata);
+
+      const previewMetadata: EncryptedPreviewPayload[] =
+        await getFilePreviewMetadata(userProfile.id);
+      const previewMap: Record<string, EncryptedPreviewPayload> = {};
+
+      for (const item of previewMetadata) {
+        if (!item.fileId || !item.url) continue;
+        console.log("Processing preview metadata item:", item);
+        previewMap[item.fileId] = item;
       }
+      console.log("Fetched preview metadata for files:", previewMap);
+
+      setPreviewsByFieldId(previewMap);
     };
 
     fetchFilesMetadata();
@@ -78,69 +96,54 @@ const Files = () => {
   });
 
   return (
-    <SafeAreaView className="flex-1 bg-[#dbeaea] dark:bg-[#181818]">
-      <Animated.ScrollView
-        contentContainerStyle={{ paddingVertical: 16 }}
-        onScroll={scrollHandler}
-      >
-        {/* Header */}
-        <View className="flex flex-row justify-between px-4">
-          <Text className="text-2xl font-roboto-bold dark:text-white">
-            Files
-          </Text>
-          <View className="flex flex-row justify-center items-center gap-3">
-            <TouchableOpacity onPress={() => {}}>
-              <SearchIcon
-                size={24}
-                color={colorScheme === "dark" ? "#fff" : "#222"}
-              />
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={() => {
-                hideTabBar();
-                settingRef.current?.expand();
-              }}
-            >
-              <Settings
-                size={24}
-                color={colorScheme === "dark" ? "#fff" : "#222"}
-              />
-            </TouchableOpacity>
-          </View>
-        </View>
-        <TouchableOpacity
-          onPress={() => {
-            hideTabBar();
-            uploadRef.current?.expand();
-          }}
-          className="mx-4 mt-6 mb-4 rounded-xl py-4 items-center bg-black dark:bg-white"
+    <FilesContext.Provider value={{ userFilesMetadata, previewsByFieldId }}>
+      <SafeAreaView className="flex-1 bg-[#dbeaea] dark:bg-[#181818]">
+        <Animated.ScrollView
+          onScroll={scrollHandler}
+          contentContainerStyle={{ paddingVertical: 16 }}
         >
-          <Text className="font-medium text-white dark:text-black">
-            Upload Files
-          </Text>
-        </TouchableOpacity>
-
-        {userFilesMetadata.length > 0 && (
-          <View className="px-4 mb-4 justify-center items-center gap-3">
-            {userFilesMetadata.map((file) => (
-              <View
-                key={file._id}
-                className="w-full p-4 rounded-lg bg-white dark:bg-[#222] shadow"
+          {/* Header */}
+          <View className="flex flex-row justify-between px-4">
+            <Text className="text-2xl font-roboto-bold dark:text-white">
+              Files
+            </Text>
+            <View className="flex flex-row gap-3">
+              <TouchableOpacity>
+                <SearchIcon
+                  size={24}
+                  color={colorScheme === "dark" ? "#fff" : "#222"}
+                />
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => {
+                  hideTabBar();
+                  settingRef.current?.expand();
+                }}
               >
-                <Text className="text-base font-medium text-black dark:text-white">
-                  {file.filename}
-                </Text>
-                <Text className="text-sm text-gray-500 dark:text-gray-400 mt-2">
-                  {formatSize(file.fileSize)}
-                </Text>
-              </View>
-            ))}
+                <Settings
+                  size={24}
+                  color={colorScheme === "dark" ? "#fff" : "#222"}
+                />
+              </TouchableOpacity>
+            </View>
           </View>
-        )}
-      </Animated.ScrollView>
-      <UploadOverlay sheetRef={uploadRef} />
-      <SettingsOverlay sheetRef={settingRef} />
-    </SafeAreaView>
+
+          {/* Upload Button */}
+          <TouchableOpacity
+            onPress={() => {
+              hideTabBar();
+              uploadRef.current?.expand();
+            }}
+            className="mx-4 mt-6 mb-4 rounded-xl py-4 items-center bg-black dark:bg-white"
+          >
+            <Text className="text-white dark:text-black">Upload Files</Text>
+          </TouchableOpacity>
+          <Gallery />
+        </Animated.ScrollView>
+        <UploadOverlay sheetRef={uploadRef} />
+        <SettingsOverlay sheetRef={settingRef} />
+      </SafeAreaView>
+    </FilesContext.Provider>
   );
 };
 

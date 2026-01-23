@@ -1,3 +1,4 @@
+import { EncryptedPreviewPayload } from "@/util/filesOperations/preview";
 import { createContext } from "react";
 
 // accountUUID: res.accountUUID,
@@ -33,6 +34,7 @@ export interface userFilesMetadata {
   accountId: string;
   filename: string;
   fileSize: number;
+  fileType: string;
   totalChunks: number;
   nonce: string;
   mac: string;
@@ -73,4 +75,12 @@ export const UserDataContext = createContext<UserDataContextType>({
   setUserProfile: () => {},
   setUserSettings: () => {},
   setUserFilesMetadata: () => {},
+});
+
+export const FilesContext = createContext<{
+  userFilesMetadata: userFilesMetadata[];
+  previewsByFieldId: Record<string, EncryptedPreviewPayload>;
+}>({
+  userFilesMetadata: [],
+  previewsByFieldId: {},
 });
