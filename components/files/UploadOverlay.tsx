@@ -10,8 +10,8 @@ import { formatSize } from "@/util/filesOperations/fileSize";
 import BottomSheet, { BottomSheetScrollView } from "@gorhom/bottom-sheet";
 import { ArrowLeft } from "lucide-react-native";
 import { useColorScheme } from "nativewind";
-import { useContext, useMemo, useState } from "react";
-import { Text, TouchableOpacity, View } from "react-native";
+import { useContext, useEffect, useMemo, useState } from "react";
+import { BackHandler, Text, TouchableOpacity, View } from "react-native";
 
 type UserFiles = {
   id: string;
@@ -112,14 +112,24 @@ const filesFormater = (
 
 interface SettingsOverlayProps {
   sheetRef: React.RefObject<BottomSheet | null>;
+  handleReload: () => void;
 }
 
-const UploadOverlay = ({ sheetRef }: SettingsOverlayProps) => {
+const UploadOverlay = ({ sheetRef, handleReload }: SettingsOverlayProps) => {
   const snapPoints = useMemo(() => ["100%"], []);
   const { colorScheme } = useColorScheme();
   const { masterKey } = useContext(CryptoContext);
   const [uplodedFiles, setUploadedFiles] = useState<UserFiles[]>([]);
   const [isUploading, setIsUploading] = useState(false);
+
+  useEffect(() => {
+    //hardware back button handling can be added here if needed
+    BackHandler.addEventListener("hardwareBackPress", () => {
+      sheetRef.current?.close();
+      showTabBar();
+      return true;
+    });
+  }, [sheetRef]);
 
   const handleFileSelect = async () => {
     setIsUploading(true);
@@ -136,6 +146,7 @@ const UploadOverlay = ({ sheetRef }: SettingsOverlayProps) => {
 
     await uploadFilesSequentially(masterKey, setUploadedFiles, formatted);
     setIsUploading(false);
+    handleReload();
   };
 
   return (

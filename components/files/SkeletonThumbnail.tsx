@@ -1,16 +1,19 @@
+import { Image, Music, Video } from "lucide-react-native";
 import React, { useEffect } from "react";
-import { Animated, ViewStyle } from "react-native";
+import { Animated, View, ViewStyle } from "react-native";
 
 interface SkeletonThumbnailProps {
   width?: number;
   height?: number;
   style?: ViewStyle;
+  category?: "photos" | "videos" | "documents" | "audio" | "others";
 }
 
 const SkeletonThumbnail: React.FC<SkeletonThumbnailProps> = ({
-  width = 120,
-  height = 120,
+  width = 117,
+  height = 117,
   style,
+  category = "photos",
 }) => {
   const shimmerAnim = React.useRef(new Animated.Value(0)).current;
 
@@ -33,8 +36,25 @@ const SkeletonThumbnail: React.FC<SkeletonThumbnailProps> = ({
 
   const backgroundColor = shimmerAnim.interpolate({
     inputRange: [0, 1],
-    outputRange: ["#e0e0e0", "#f0f0f0"],
+    outputRange: ["#d0d0d0", "#e5e5e5"],
   });
+
+  const opacity = shimmerAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0.4, 0.7],
+  });
+
+  const getIcon = () => {
+    switch (category) {
+      case "videos":
+        return <Video size={32} color="#888" />;
+      case "audio":
+        return <Music size={32} color="#888" />;
+      case "photos":
+      default:
+        return <Image size={32} color="#888" />;
+    }
+  };
 
   return (
     <Animated.View
@@ -42,12 +62,17 @@ const SkeletonThumbnail: React.FC<SkeletonThumbnailProps> = ({
         {
           width,
           height,
-          minWidth: 120,
+          minWidth: 117,
           backgroundColor,
+          marginBottom: 1.5,
         },
         style,
       ]}
-    />
+    >
+      <View className="h-full w-full items-center justify-center">
+        <Animated.View style={{ opacity }}>{getIcon()}</Animated.View>
+      </View>
+    </Animated.View>
   );
 };
 

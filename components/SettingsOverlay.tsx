@@ -4,8 +4,8 @@ import { SettingsProperties } from "@/Operations/Settings";
 import BottomSheet, { BottomSheetView } from "@gorhom/bottom-sheet";
 import { ArrowLeft } from "lucide-react-native";
 import { useColorScheme } from "nativewind";
-import React, { useMemo } from "react";
-import { Text, TouchableOpacity, View } from "react-native";
+import React, { useEffect, useMemo } from "react";
+import { BackHandler, Text, TouchableOpacity, View } from "react-native";
 import Animated, {
   interpolate,
   useAnimatedStyle,
@@ -23,6 +23,14 @@ const SettingsOverlay = ({ sheetRef }: SettingsOverlayProps) => {
   const { signOut } = React.useContext(AuthContext);
   const { userSettings } = React.useContext(UserDataContext);
   const snapPoints = useMemo(() => ["100%"], []);
+
+  useEffect(() => {
+    BackHandler.addEventListener("hardwareBackPress", () => {
+      showTabBar();
+      sheetRef.current?.close();
+      return true;
+    });
+  }, [sheetRef]);
 
   const scaleL = useSharedValue(colorScheme === "light" ? 1.2 : 1);
   const scaleD = useSharedValue(colorScheme === "dark" ? 1.2 : 1);

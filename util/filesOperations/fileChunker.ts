@@ -1,10 +1,20 @@
 import { storage } from "@/storage/mmkv";
 import * as FileSystem from "expo-file-system/legacy";
 import * as Random from "expo-random";
-import { deriveKeys, encryptChunk, encryptPreview } from "../cryptography";
+import RNFS from "react-native-fs";
+import {
+  decryptChunk,
+  deriveKeys,
+  encryptChunk,
+  encryptPreview,
+} from "../cryptography";
 import { getFileSize } from "./fileSize";
 import { uploadChunkToServer, uploadPreviewToServer } from "./fileUploader";
-import { generateImagePreview } from "./preview";
+import {
+  generateImagePreview,
+  generateVideoPreview,
+  getMediaDurationSeconds,
+} from "./preview";
 
 const CHUNK_SIZE = 5 * 1024 * 1024; // 5 MB
 
@@ -84,7 +94,13 @@ export async function encryptFileToChunks(
 }
 
 export async function uploadEncryptedChunks(
-  filesMetadata: { id: string; name: string; size: number; type: string },
+  filesMetadata: {
+    fileId: string;
+    filename: string;
+    fileSize: number;
+    fileType: string;
+    duration?: number;
+  },
   chunks: EncryptedChunk[],
   onProgress: (p: number) => void,
 ) {
@@ -97,11 +113,8 @@ export async function uploadEncryptedChunks(
       userId: storage.getString("userProfile")
         ? JSON.parse(storage.getString("userProfile") || "").id
         : "",
-      fileId: filesMetadata.id,
-      filename: filesMetadata.name,
+      ...filesMetadata,
       index: i,
-      fileSize: filesMetadata.size,
-      fileType: filesMetadata.type,
       totalChunks: chunks.length,
       encrypted: chunks[i].encrypted,
     });
@@ -123,7 +136,6 @@ type UserFiles = {
   status: "encrypting" | "uploading" | "completed" | "error" | "pending";
 };
 
-//TODO: implement this function to upload multiple files sequentially
 export async function uploadFilesSequentially(
   masterKey: string,
   setFiles: React.Dispatch<React.SetStateAction<UserFiles[]>>,
@@ -154,6 +166,35 @@ export async function uploadFilesSequentially(
         console.log(`Generating preview for image file: ${file.file.name}`);
 
         const previewBase64 = await generateImagePreview(file.file.uri);
+
+        console.log(
+          "previewBase64 last chars",
+          previewBase64.slice(-10),
+          "length:",
+          previewBase64.length,
+        );
+
+        const encryptedPreviewPayload = await encryptPreview(
+          previewBase64,
+          masterKey,
+        );
+
+        console.log(
+          `Encrypted preview for file: ${file.file.name} - `,
+          encryptedPreviewPayload,
+        );
+
+        await uploadPreviewToServer({
+          userId: storage.getString("userProfile")
+            ? JSON.parse(storage.getString("userProfile") || "").id
+            : "",
+          fileId: file.id,
+          ...encryptedPreviewPayload,
+        });
+      } else if (file.file.type.startsWith("video/")) {
+        console.log(`Generating preview for video file: ${file.file.name}`);
+
+        const previewBase64 = await generateVideoPreview(file.file.uri);
 
         console.log(
           "previewBase64 last chars",
@@ -215,25 +256,43 @@ export async function uploadFilesSequentially(
         ),
       );
 
+      const chunkDetails: {
+        fileId: string;
+        filename: string;
+        fileSize: number;
+        fileType: string;
+        duration?: number;
+      } = {
+        fileId: file.id,
+        filename: file.file.name,
+        fileSize: file.file.size,
+        fileType: file.file.type,
+      };
+
+      if (
+        file.file.type.startsWith("audio/") ||
+        file.file.type.startsWith("video/")
+      ) {
+        const duration = await getMediaDurationSeconds(file.file.uri);
+        console.log(
+          `Audio duration for ${file.file.name}: ${duration} seconds`,
+        );
+
+        if (duration !== null) {
+          chunkDetails.duration = duration;
+        }
+      }
+
       // Upload encrypted chunks with progress callback
-      await uploadEncryptedChunks(
-        {
-          id: file.id,
-          name: file.file.name,
-          size: file.file.size,
-          type: file.file.type,
-        },
-        chunks,
-        (percent) => {
-          setFiles((prevFiles: UserFiles[]) =>
-            prevFiles.map((f) =>
-              f.file.name === file.file.name
-                ? { ...f, progress: percent, status: "uploading" }
-                : f,
-            ),
-          );
-        },
-      );
+      await uploadEncryptedChunks(chunkDetails, chunks, (percent) => {
+        setFiles((prevFiles: UserFiles[]) =>
+          prevFiles.map((f) =>
+            f.file.name === file.file.name
+              ? { ...f, progress: percent, status: "uploading" }
+              : f,
+          ),
+        );
+      });
 
       // Mark file as completed
       setFiles((prevFiles: UserFiles[]) =>
@@ -247,4 +306,80 @@ export async function uploadFilesSequentially(
   } catch (error) {
     console.error("Error uploading files:", error);
   }
+}
+
+export async function decryptFileToChunks(
+  currentFile: {
+    encryptedData: {
+      index: number;
+      assetId: string;
+      url: string;
+    }[];
+    status: "pending" | "decrypting" | "completed" | "error";
+    progress: number;
+  },
+  setCurrentFile: React.Dispatch<
+    React.SetStateAction<{
+      encryptedData: {
+        index: number;
+        assetId: string;
+        url: string;
+      }[];
+      status: "pending" | "decrypting" | "completed" | "error";
+      progress: number;
+    }>
+  >,
+  secretKey: string,
+) {
+  const { encKey, macKey } = deriveKeys(secretKey);
+
+  setCurrentFile((prev) => ({
+    ...prev,
+    status: "decrypting",
+    progress: 0,
+  }));
+
+  const outputPath = `${RNFS.CachesDirectoryPath}/reconstructed_${Date.now()}.bin`;
+
+  const sortedChunks = [...currentFile.encryptedData].sort(
+    (a, b) => a.index - b.index,
+  );
+
+  if (await RNFS.exists(outputPath)) {
+    await RNFS.unlink(outputPath);
+  }
+
+  await RNFS.writeFile(outputPath, "", "base64");
+
+  const totalChunks = sortedChunks.length;
+  let completedChunks = 0;
+
+  for (const chunk of sortedChunks) {
+    const response = await fetch(chunk.url);
+    if (!response.ok) throw new Error("Failed to fetch chunk");
+
+    const encryptedChunk = JSON.parse(await response.json());
+
+    const decryptedBase64 = await decryptChunk(encryptedChunk, encKey, macKey);
+
+    await RNFS.appendFile(outputPath, decryptedBase64, "base64");
+
+    completedChunks += 1;
+
+    const progress = Math.round((completedChunks / totalChunks) * 100);
+
+    setCurrentFile((prev) => ({
+      ...prev,
+      status: "decrypting",
+      progress,
+    }));
+  }
+
+  setCurrentFile((prev) => ({
+    ...prev,
+    status: "completed",
+    progress: 100,
+  }));
+
+  return outputPath;
 }

@@ -35,6 +35,7 @@ export interface userFilesMetadata {
   filename: string;
   fileSize: number;
   fileType: string;
+  duration?: number;
   totalChunks: number;
   nonce: string;
   mac: string;
