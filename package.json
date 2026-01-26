@@ -37,6 +37,7 @@
     "expo-haptics": "~15.0.8",
     "expo-image": "~3.0.11",
     "expo-image-manipulator": "^14.0.8",
+    "expo-intent-launcher": "~13.0.8",
     "expo-linking": "~8.0.11",
     "expo-local-authentication": "~17.0.8",
     "expo-random": "^14.0.1",
@@ -75,6 +76,7 @@
   },
   "devDependencies": {
     "@types/crypto-js": "^4.2.2",
+    "@types/mime": "^3.0.4",
     "@types/react": "~19.1.0",
     "@types/uuid": "^10.0.0",
     "eslint": "^9.25.0",

@@ -8,6 +8,7 @@ import {
   encryptChunk,
   encryptPreview,
 } from "../cryptography";
+import { getExtensionFromMime } from "../openWith";
 import { getFileSize } from "./fileSize";
 import { uploadChunkToServer, uploadPreviewToServer } from "./fileUploader";
 import {
@@ -315,6 +316,7 @@ export async function decryptFileToChunks(
       assetId: string;
       url: string;
     }[];
+    fileType: string;
     status: "pending" | "decrypting" | "completed" | "error";
     progress: number;
   },
@@ -325,6 +327,7 @@ export async function decryptFileToChunks(
         assetId: string;
         url: string;
       }[];
+      fileType: string;
       status: "pending" | "decrypting" | "completed" | "error";
       progress: number;
     }>
@@ -339,7 +342,9 @@ export async function decryptFileToChunks(
     progress: 0,
   }));
 
-  const outputPath = `${RNFS.CachesDirectoryPath}/reconstructed_${Date.now()}.bin`;
+  const extension = getExtensionFromMime(currentFile?.fileType || "");
+
+  const outputPath = `${RNFS.CachesDirectoryPath}/reconstructed_${Date.now()}.${extension}`;
 
   const sortedChunks = [...currentFile.encryptedData].sort(
     (a, b) => a.index - b.index,
