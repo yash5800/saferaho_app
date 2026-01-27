@@ -1,5 +1,6 @@
 import { categeryType } from "@/app/(protected)/(tabs)/files";
-import { FilesContext, userFilesMetadata } from "@/context/mainContext";
+import { UserDataContext, UserFilesMetadata } from "@/context/mainContext";
+import { hideFloating, showFloating } from "@/lib/floatingContoller";
 import { previewCache, previewLoading, setPreview } from "@/lib/previewCache";
 import { hideTabBar, showTabBar } from "@/lib/tabBarContoller";
 import { buildPreviewImage } from "@/util/filesOperations/preview";
@@ -23,6 +24,8 @@ interface GalleryProps {
   ListHeaderComponent: React.ComponentType<any> | null;
   category: categeryType;
   scrollHandler: any;
+  handleReload: () => void;
+  refreshing?: boolean;
 }
 
 const fileTypes = {
@@ -37,13 +40,16 @@ const Gallery = ({
   ListHeaderComponent,
   category,
   scrollHandler,
+  handleReload,
+  refreshing,
 }: GalleryProps) => {
-  const { previewsByFieldId, userFilesMetadata } = useContext(FilesContext);
+  const { previewsByFieldId, userFilesMetadata, reload } =
+    useContext(UserDataContext);
   const { masterKey } = useContext(CryptoContext);
   const { colorScheme } = useColorScheme();
 
-  const [galleryFiles, setGalleryFiles] = useState<userFilesMetadata[]>([]);
-  const [selectedItem, setSelectedItem] = useState<userFilesMetadata | null>(
+  const [galleryFiles, setGalleryFiles] = useState<UserFilesMetadata[]>([]);
+  const [selectedItem, setSelectedItem] = useState<UserFilesMetadata | null>(
     null,
   );
   const previewsRef = useRef(previewsByFieldId);
@@ -151,11 +157,12 @@ const Gallery = ({
     };
   });
 
-  const openFullItem = (item: userFilesMetadata) => {
+  const openFullItem = (item: UserFilesMetadata) => {
     setSelectedItem(item);
     scaleFull.value = withTiming(1, { duration: 250 });
 
     hideTabBar();
+    hideFloating();
   };
 
   const closeFullItem = () => {
@@ -164,6 +171,7 @@ const Gallery = ({
     });
 
     showTabBar();
+    showFloating();
   };
 
   return (
@@ -171,9 +179,16 @@ const Gallery = ({
       <FlashList
         data={galleryFiles}
         numColumns={category === "photos" || category === "videos" ? 3 : 1}
+        extraData={category}
         keyExtractor={(item) => item._id}
-        renderItem={({ item }) =>
-          category === "photos" || category === "videos" ? (
+        renderItem={({ item }) => {
+          if (
+            (category === "photos" || category === "videos") &&
+            !previewCache.has(item._id)
+          ) {
+            requestPreviewDecrypt(item._id);
+          }
+          return category === "photos" || category === "videos" ? (
             <FilePreview
               fileId={item._id}
               category={category}
@@ -185,8 +200,8 @@ const Gallery = ({
               category={category}
               onPress={() => openFullItem(item)}
             />
-          )
-        }
+          );
+        }}
         ListHeaderComponent={ListHeaderComponent}
         ListEmptyComponent={
           <View className="flex-1 items-center justify-center py-20 px-6">
@@ -207,12 +222,13 @@ const Gallery = ({
         onViewableItemsChanged={onViewableItemsChanged}
         viewabilityConfig={{ itemVisiblePercentThreshold: 30 }}
         contentContainerStyle={{
-          paddingBottom: 60,
           paddingHorizontal: 2,
           position: "relative",
         }}
         onScroll={scrollHandler}
         scrollEventThrottle={16}
+        refreshing={false}
+        onRefresh={handleReload}
       />
       {selectedItem && (
         <FullItem

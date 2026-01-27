@@ -1,6 +1,8 @@
+import { setPickingInProgress } from "@/globals/picking";
 import * as Sharing from "expo-sharing";
 
 const shareFileAsync = async (fileUri: string) => {
+  setPickingInProgress(true);
   try {
     const canShare = await Sharing.isAvailableAsync();
     if (!canShare) {
@@ -18,6 +20,8 @@ const shareFileAsync = async (fileUri: string) => {
   } catch (error) {
     console.error("Error sharing file:", error);
     return false;
+  } finally {
+    setPickingInProgress(false);
   }
 };
 

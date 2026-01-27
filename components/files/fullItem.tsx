@@ -1,5 +1,5 @@
 import { categeryType } from "@/app/(protected)/(tabs)/files";
-import { userFilesMetadata } from "@/context/mainContext";
+import { UserFilesMetadata } from "@/context/mainContext";
 import { csv, doc, music, pdf, xls, zip } from "@/lib/icons";
 import { displayToast } from "@/util/disToast";
 import { saveToDownloads } from "@/util/filesOperations/download";
@@ -10,29 +10,29 @@ import { shareFileAsync } from "@/util/share";
 import { BlurView } from "@react-native-community/blur";
 import { Video } from "expo-av";
 import {
-  Download,
-  EllipsisVertical,
-  ExternalLink,
-  Share2,
+    Download,
+    EllipsisVertical,
+    ExternalLink,
+    Share2,
 } from "lucide-react-native";
 import { useColorScheme } from "nativewind";
 import { useContext, useEffect, useState } from "react";
 import {
-  Animated,
-  BackHandler,
-  Image,
-  Pressable,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    Animated,
+    BackHandler,
+    Image,
+    Pressable,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from "react-native";
 import { CryptoContext } from "../crypto/Crypto";
 import { RainProgressBar } from "../RainProgressBar";
 import SkeletonThumbnail from "./SkeletonThumbnail";
 
 type FullItemProps = {
-  item?: userFilesMetadata;
+  item?: UserFilesMetadata;
   category?: categeryType;
   animatedItem?: Animated.WithAnimatedValue<any>;
   onClose?: () => void;
@@ -45,7 +45,7 @@ interface CurrentFileState {
     url: string;
   }[];
   fileType: string;
-  status: "pending" | "decrypting" | "completed" | "error";
+  status: "pending" | "fetching" | "decrypting" | "completed" | "error";
   progress: number;
 }
 

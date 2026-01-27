@@ -4,8 +4,8 @@ import {
   Heart,
   Image,
   Music,
-  SearchIcon,
-  SettingsIcon,
+  Search,
+  Settings,
   Video,
 } from "lucide-react-native";
 import { ScrollView, Text, TouchableOpacity, View } from "react-native";
@@ -13,7 +13,6 @@ import { ScrollView, Text, TouchableOpacity, View } from "react-native";
 interface FileHeaderProps {
   colorScheme: "light" | "dark" | undefined;
   handleSettings: () => void;
-  handleUpload: () => void;
   category: "photos" | "videos" | "documents" | "audio" | "others";
   setCategory: React.Dispatch<
     React.SetStateAction<"photos" | "videos" | "documents" | "audio" | "others">
@@ -21,89 +20,103 @@ interface FileHeaderProps {
 }
 
 const categoryList = [
-  {
-    title: "photos",
-    icon: (props: any) => <Image size={16} color="#000" {...props} />,
-  },
-  {
-    title: "videos",
-    icon: (props: any) => <Video size={16} color="#000" {...props} />,
-  },
-  {
-    title: "documents",
-    icon: (props: any) => <File size={16} color="#000" {...props} />,
-  },
-  {
-    title: "audio",
-    icon: (props: any) => <Music size={16} color="#000" {...props} />,
-  },
-  {
-    title: "others",
-    icon: (props: any) => <Heart size={16} color="#000" {...props} />,
-  },
+  { title: "photos", icon: Image },
+  { title: "videos", icon: Video },
+  { title: "documents", icon: File },
+  { title: "audio", icon: Music },
+  { title: "others", icon: Heart },
 ];
 
 const FileHeader = ({
   colorScheme,
   handleSettings,
-  handleUpload,
   category,
   setCategory,
 }: FileHeaderProps) => {
+  const isDark = colorScheme === "dark";
+
   return (
     <>
-      {/* Header */}
-      <View className="flex flex-row justify-between px-4 pt-4">
-        <Text className="text-2xl font-roboto-bold dark:text-white">Files</Text>
-        <View className="flex flex-row gap-3">
-          <TouchableOpacity>
-            <SearchIcon
-              size={24}
-              color={colorScheme === "dark" ? "#fff" : "#222"}
-            />
+      {/*  Header */}
+      <View className="flex-row items-center justify-between px-4 pt-4">
+        <Text className="text-2xl font-roboto-bold text-neutral-900 dark:text-white">
+          Files
+        </Text>
+
+        <View className="flex-row gap-2">
+          <TouchableOpacity
+            activeOpacity={0.8}
+            className="w-10 h-10 rounded-full bg-neutral-100 dark:bg-neutral-800 items-center justify-center"
+          >
+            <Search size={18} color={isDark ? "#fff" : "#111"} />
           </TouchableOpacity>
-          <TouchableOpacity onPress={handleSettings}>
-            <SettingsIcon
-              size={24}
-              color={colorScheme === "dark" ? "#fff" : "#222"}
-            />
+
+          <TouchableOpacity
+            activeOpacity={0.8}
+            onPress={handleSettings}
+            className="w-10 h-10 rounded-full bg-neutral-100 dark:bg-neutral-800 items-center justify-center"
+          >
+            <Settings size={18} color={isDark ? "#fff" : "#111"} />
           </TouchableOpacity>
         </View>
       </View>
 
-      <TouchableOpacity
-        className="mt-4 mx-4 mb-2 px-4 py-2 bg-blue-600 rounded-full items-center"
-        onPress={handleUpload}
-      >
-        <Text className="text-white font-medium">Upload Files</Text>
-      </TouchableOpacity>
-
-      {/* Categories */}
+      {/*  Categories  */}
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={{ paddingHorizontal: 16 }}
+        className="mt-5"
       >
-        <View className="mt-6 flex flex-row gap-3 mb-5">
-          {categoryList.map((catItem) => (
-            <TouchableOpacity
-              key={catItem.title}
-              className={`flex flex-row items-center gap-2 bg-white dark:bg-gray-800 px-3 py-1.5 rounded-full shadow
-              ${
-                category === catItem.title
-                  ? colorScheme === "dark"
-                    ? "border border-white"
-                    : "border border-black"
-                  : ""
-              }`}
-              onPress={() => setCategory(catItem.title as categeryType)}
-            >
-              {catItem.icon({
-                color: colorScheme === "dark" ? "#fff" : "#000",
-              })}
-              <Text className="text-sm dark:text-white">{catItem.title}</Text>
-            </TouchableOpacity>
-          ))}
+        <View className="flex-row gap-2 mb-4">
+          {categoryList.map((cat) => {
+            const Icon = cat.icon;
+            const active = category === cat.title;
+
+            return (
+              <TouchableOpacity
+                key={cat.title}
+                activeOpacity={0.85}
+                onPress={() => setCategory(cat.title as categeryType)}
+                className={`
+                  flex-row items-center gap-2 px-4 py-2 rounded-full
+                  ${
+                    active
+                      ? "bg-neutral-900 dark:bg-white"
+                      : "bg-neutral-100 dark:bg-neutral-800"
+                  }
+                `}
+              >
+                <Icon
+                  size={14}
+                  color={
+                    active
+                      ? isDark
+                        ? "#000"
+                        : "#fff"
+                      : isDark
+                        ? "#fff"
+                        : "#111"
+                  }
+                />
+
+                <Text
+                  className={`
+                    text-sm capitalize
+                    ${
+                      active
+                        ? isDark
+                          ? "text-black"
+                          : "text-white"
+                        : "text-neutral-700 dark:text-neutral-300"
+                    }
+                  `}
+                >
+                  {cat.title}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
         </View>
       </ScrollView>
     </>

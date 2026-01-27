@@ -1,12 +1,16 @@
 import {
   UserDataContext,
-  userFilesMetadata,
+  UserFilesMetadata,
   UserProfile,
   UserSettings,
 } from "@/context/mainContext";
 import { isPickingInProgress } from "@/globals/picking";
 import { SettingsProperties } from "@/Operations/Settings";
+import FilesMetaService, {
+  FilesMetaServiceTypes,
+} from "@/services/FileMetaService";
 import { storage } from "@/storage/mmkv";
+import { EncryptedPreviewPayload } from "@/util/filesOperations/preview";
 import { useColorScheme } from "nativewind";
 import React, { useContext, useEffect, useRef, useState } from "react";
 import { AppState, AppStateStatus } from "react-native";
@@ -27,8 +31,14 @@ const UserData = ({ children }: UserDataProps) => {
     enableNotifications: false,
   });
   const [userFilesMetadata, setUserFilesMetadata] = React.useState<
-    userFilesMetadata[]
+    UserFilesMetadata[]
   >([]);
+  const [previewsByFieldId, setPreviewsByFieldId] = React.useState<
+    Record<string, EncryptedPreviewPayload>
+  >({});
+
+  const [filesObjects, setFilesObjects] =
+    React.useState<FilesMetaServiceTypes | null>(null);
 
   const [cryptoFailedAttempts, setCryptoFailedAttempts] = React.useState(0);
   const [showLockScreen, setShowLockScreen] = useState(false);
@@ -88,6 +98,45 @@ const UserData = ({ children }: UserDataProps) => {
     return () => subscription.remove();
   }, [isAuthenticated]);
 
+  useEffect(() => {
+    if (!userProfile?.id) return;
+
+    // Fetch initial files metadata
+    const fetchUserData = async () => {
+      const filesMetaService = new FilesMetaService(userProfile.id);
+      await filesMetaService.init();
+      setFilesObjects(filesMetaService);
+
+      const filesData = await filesMetaService.getFilesData();
+
+      if (filesData) {
+        setUserFilesMetadata(filesData.filesCache);
+        setPreviewsByFieldId(filesData.previewMap);
+      }
+    };
+    fetchUserData();
+
+    // TODO : implenetations of vaults can be added here
+  }, [userProfile?.id]);
+
+  {
+    /* Reload function to refresh files metadata */
+  }
+  const reload = async () => {
+    if (!userProfile?.id || !filesObjects) return;
+
+    const filesData = await filesObjects.refresh();
+    console.log("Files data refreshed:", filesData);
+
+    if (filesData) {
+      setUserFilesMetadata(filesData.filesCache);
+      setPreviewsByFieldId(filesData.previewMap);
+    }
+  };
+
+  {
+    /* Handle AppState changes */
+  }
   const handleAppStateChange = (nextAppState: AppStateStatus) => {
     console.log("AppState", appStateRef.current, nextAppState);
 
@@ -156,6 +205,9 @@ const UserData = ({ children }: UserDataProps) => {
         setUserSettings,
         userFilesMetadata,
         setUserFilesMetadata,
+        reload,
+        previewsByFieldId,
+        setPreviewsByFieldId,
       }}
     >
       {children}

@@ -1,4 +1,7 @@
+import { useGetPath } from "@/components/getPath";
 import StorageActivity from "@/components/home/StorageActivity";
+import { UserDataContext } from "@/context/mainContext";
+import { hideFloating, showFloating } from "@/lib/floatingContoller";
 import {
   apps,
   compressed,
@@ -10,7 +13,17 @@ import {
   videos,
 } from "@/lib/icons";
 import { hideTabBar, showTabBar } from "@/lib/tabBarContoller";
-import { Image, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { formatSize } from "@/util/filesOperations/fileSize";
+import { usageItemsFilter } from "@/util/home/usageItems";
+import { useContext, useEffect, useMemo, useState } from "react";
+import {
+  Image,
+  RefreshControl,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import Animated, {
   runOnJS,
   useAnimatedScrollHandler,
@@ -18,115 +31,79 @@ import Animated, {
 } from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-const groceryList = [
-  "apples",
-  "bananas",
-  "oranges",
-  "grapes",
-  "strawberries",
-  "blueberries",
-  "raspberries",
-  "blackberries",
-  "spinach",
-  "kale",
-  "lettuce",
-  "cabbage",
-  "carrots",
-  "broccoli",
-  "cauliflower",
-  "zucchini",
-  "cucumbers",
-  "tomatoes",
-  "peppers",
-  "onions",
-  "garlic",
-  "potatoes",
-  "sweet potatoes",
-  "avocados",
-  "mushrooms",
-  "milk",
-  "cheese",
-  "butter",
-  "yogurt",
-  "eggs",
-  "bacon",
-  "chicken",
-  "beef",
-  "pork",
-  "fish",
-  "shrimp",
-  "bread",
-  "rice",
-  "pasta",
-  "olive oil",
-  "honey",
-  "coffee",
-  "tea",
-  "juice",
-  "cereal",
-  "oats",
-];
+/* ----------------------------- helpers ----------------------------- */
 
-const UsageItems = [
-  {
-    name: "Images",
-    icon: images,
-    total: "12 Files",
-  },
-  {
-    name: "Videos",
-    icon: videos,
-    total: "8 Files",
-  },
-  {
-    name: "Documents",
-    icon: documents,
-    total: "15 Files",
-  },
-  {
-    name: "Music",
-    icon: music,
-    total: "20 Files",
-  },
-  {
-    name: "Apps",
-    icon: apps,
-    total: "5 Files",
-  },
-  {
-    name: "Compressed",
-    icon: compressed,
-    total: "3 Files",
-  },
-  {
-    name: "Others",
-    icon: others,
-    total: "7 Files",
-  },
-  {
-    name: "Vault",
-    icon: vault,
-    total: "4 Records",
-  },
-];
+const getFileIcon = (fileType: string) => {
+  const normalized = fileType?.toLowerCase() || "";
+  if (normalized.startsWith("image/")) return images;
+  if (normalized.startsWith("video/")) return videos;
+  if (normalized.startsWith("audio/")) return music;
+  if (normalized.includes("zip") || normalized.includes("compressed"))
+    return compressed;
+  if (
+    normalized.includes("pdf") ||
+    normalized.includes("doc") ||
+    normalized.includes("sheet") ||
+    normalized.includes("presentation")
+  )
+    return documents;
+  return others;
+};
 
-const recent = [
-  {
-    fileName: "vacation_photo.png",
-    fileSize: "2.1 MB",
-    date: "12 Aug 2023",
-    icon: images,
-  },
-  {
-    fileName: "project_proposal.pdf",
-    fileSize: "1.2 MB",
-    date: "10 Sep 2023",
-    icon: documents,
-  },
-];
+const formatCreatedDate = (createdAt: string) => {
+  const date = new Date(createdAt);
+  if (Number.isNaN(date.getTime())) return "";
+  return date.toLocaleDateString("en-GB", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
+};
+
+/* ------------------------------ screen ----------------------------- */
 
 const Home = () => {
+  const { userFilesMetadata, reload } = useContext(UserDataContext);
+  const currentPath = useGetPath();
   const lastY = useSharedValue(0);
+
+  const [refreshing, setRefreshing] = useState(false);
+  const [usageItems, setUsageItems] = useState([
+    { name: "Images", icon: images, total: 0, size: 0, percent: 0 },
+    { name: "Videos", icon: videos, total: 0, size: 0, percent: 0 },
+    { name: "Documents", icon: documents, total: 0, size: 0, percent: 0 },
+    { name: "Music", icon: music, total: 0, size: 0, percent: 0 },
+    { name: "Apps", icon: apps, total: 0, size: 0, percent: 0 },
+    { name: "Compressed", icon: compressed, total: 0, size: 0, percent: 0 },
+    { name: "Others", icon: others, total: 0, size: 0, percent: 0 },
+    { name: "Vault", icon: vault, total: 0, size: 0, percent: 0 },
+  ]);
+
+  /* ----------------------------- effects ---------------------------- */
+
+  useEffect(() => {
+    const updatedUsageItems = usageItemsFilter({
+      userFilesMetadata,
+      usageItems,
+    });
+    setUsageItems(updatedUsageItems);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userFilesMetadata]);
+
+  useEffect(() => {
+    if (currentPath !== "profile") showFloating();
+  }, [currentPath]);
+
+  /* ----------------------------- actions ---------------------------- */
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    try {
+      await reload();
+    } finally {
+      setRefreshing(false);
+    }
+  };
 
   const scrollHandler = useAnimatedScrollHandler((event) => {
     const y = event.contentOffset.y;
@@ -134,82 +111,173 @@ const Home = () => {
 
     if (y <= 0) {
       runOnJS(showTabBar)();
+      runOnJS(showFloating)();
       lastY.value = 0;
       return;
     }
 
-    // hiding when scrolling down
     if (diff > 3) {
       runOnJS(hideTabBar)();
+      runOnJS(hideFloating)();
     }
 
-    // showing scrolling up
     if (diff < -10) {
       runOnJS(showTabBar)();
+      runOnJS(showFloating)();
     }
+
     lastY.value = y;
   });
 
+  /* ------------------------------ data ------------------------------ */
+
+  const recentFiles = useMemo(
+    () =>
+      [...userFilesMetadata]
+        .sort(
+          (a, b) =>
+            new Date(b._createdAt).getTime() - new Date(a._createdAt).getTime(),
+        )
+        .slice(0, 3)
+        .map((file) => ({
+          id: file._id,
+          fileName: file.filename,
+          fileSize: formatSize(file.fileSize),
+          date: formatCreatedDate(file._createdAt),
+          icon: getFileIcon(file.fileType),
+        })),
+    [userFilesMetadata],
+  );
+
   return (
-    <SafeAreaView className="flex-1 bg-[#dbeaea] dark:bg-[#181818]">
+    <SafeAreaView className="flex-1 bg-[#f4f7f8] dark:bg-[#0f0f0f]">
       <Animated.ScrollView
         className="px-4 pt-4"
         onScroll={scrollHandler}
         scrollEventThrottle={16}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
+        }
       >
-        <View className="flex-1 flex-row justify-between items-center gap-2">
-          <View className="justify-center items-center rounded-full w-14 h-14 bg-white dark:bg-gray-800">
-            <Text className="text-3xl font-bold dark:text-white">A</Text>
+        {/* ---------------- Header ---------------- */}
+        <View className="flex-row items-center gap-3 mb-5">
+          <View className="w-12 h-12 rounded-full bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 items-center justify-center">
+            <Text className="text-xl font-bold dark:text-white">A</Text>
           </View>
+
           <TextInput
-            placeholder="Search"
-            className="flex-1 bg-slate-100 shadow-lg active:shadow-xl rounded-full px-4 dark:bg-gray-700 dark:text-white placeholder:text-gray-400"
+            placeholder="Search files, folders…"
+            className="flex-1 h-12 px-4 rounded-full bg-white/80 dark:bg-neutral-900/80 border border-neutral-200 dark:border-neutral-800 text-base dark:text-white"
+            placeholderTextColor="#9ca3af"
           />
         </View>
-        <View className="mt-4 px-3">
-          <Text className="text-2xl font-roboto-bold dark:text-white">
-            Welcome to SafeRaho Space!
+
+        {/*  Welcome  */}
+        <View className="mb-4">
+          <Text className="text-xl font-semibold text-neutral-900 dark:text-white">
+            Welcome back 👋
+          </Text>
+          <Text className="text-sm text-neutral-500 dark:text-neutral-400">
+            Your SafeRaho Space
           </Text>
         </View>
+
+        {/*  Storage  */}
         <StorageActivity />
-        <View className="flex flex-row justify-start items-center flex-wrap gap-4 mt-5">
-          {UsageItems.map((item) => (
+
+        {/*  Usage Grid  */}
+        <View className="flex-row flex-wrap justify-between gap-y-4 mt-5">
+          {usageItems.map((item) => (
             <TouchableOpacity
               key={item.name}
-              className="w-28 h-28 bg-white dark:bg-gray-800 rounded-lg justify-center items-center shadow-md active:shadow-lg"
+              activeOpacity={0.85}
+              className="w-[47%] bg-white dark:bg-neutral-900 rounded-2xl p-4 border border-neutral-200 dark:border-neutral-800"
             >
-              <Image source={item.icon} style={{ width: 30, height: 30 }} />
-              <Text className="mt-2 font-roboto-medium dark:text-white">
-                {item.name}
-              </Text>
-              <Text className="text-sm text-gray-500 dark:text-gray-400">
-                {item.total}
-              </Text>
+              <View className="flex-row justify-between items-start">
+                {/* Top */}
+                <View className="flex-1">
+                  <View className="w-10 h-10 rounded-xl bg-neutral-100 dark:bg-neutral-800 items-center justify-center">
+                    <Image
+                      source={item.icon}
+                      style={{ width: 22, height: 22 }}
+                    />
+                  </View>
+                </View>
+                <View className="flex-1 items-end">
+                  <Text className="text-xs font-medium text-neutral-700 dark:text-neutral-300">
+                    {formatSize(item.size ?? 0)}
+                  </Text>
+
+                  <View className="mt-1 w-14 h-1.5 rounded-full bg-neutral-200 dark:bg-neutral-800 overflow-hidden">
+                    <View
+                      className="h-full bg-emerald-500"
+                      style={{
+                        width: `${
+                          item.percent ??
+                          Math.min(
+                            ((item.size ?? 0) / (1024 * 1024 * 1024)) * 100,
+                            100,
+                          )
+                        }%`,
+                      }}
+                    />
+                  </View>
+                </View>
+              </View>
+
+              {/* Bottom */}
+              <View className="ml-3">
+                <Text className="mt-3 text-base font-medium dark:text-white">
+                  {item.name}
+                </Text>
+
+                <Text className="text-xs text-neutral-500 dark:text-neutral-400">
+                  {item.total} {item.name !== "Vault" ? "Files" : "Records"}
+                </Text>
+              </View>
             </TouchableOpacity>
           ))}
         </View>
-        <View className="flex justify-center items-start mt-6 pb-10">
-          <Text className="text-xl font-semibold text-gray-00 dark:text-white">
+
+        {/*  Recent  */}
+        <View className="mt-7 pb-10">
+          <Text className="text-lg font-semibold dark:text-white mb-3">
             Recent
           </Text>
-          <View className="w-full mt-4 gap-3">
-            {recent.map((file, index) => (
-              <View
-                key={`file${index}`}
-                className="rounded-3xl justify-start items-center flex-row bg-white dark:bg-gray-800 p-4"
-              >
-                <Image source={file.icon} style={{ width: 40, height: 40 }} />
-                <View className="ml-4 flex-1">
-                  <Text className="font-roboto-medium dark:text-white text-lg">
-                    {file.fileName}
-                  </Text>
-                  <Text className="text-sm text-gray-500 dark:text-gray-400">
-                    {file.fileSize} | {file.date}
-                  </Text>
+
+          {recentFiles.length === 0 ? (
+            <Text className="text-sm text-neutral-500 dark:text-neutral-400">
+              No recent files yet.
+            </Text>
+          ) : (
+            <View className="gap-3">
+              {recentFiles.map((file) => (
+                <View
+                  key={file.id}
+                  className="flex-row items-center gap-4 bg-white dark:bg-neutral-900 rounded-2xl p-4 border border-neutral-200 dark:border-neutral-800"
+                >
+                  <View className="w-11 h-11 rounded-xl bg-neutral-100 dark:bg-neutral-800 items-center justify-center">
+                    <Image
+                      source={file.icon}
+                      style={{ width: 22, height: 22 }}
+                    />
+                  </View>
+
+                  <View className="flex-1">
+                    <Text
+                      className="text-base font-medium dark:text-white"
+                      numberOfLines={1}
+                    >
+                      {file.fileName}
+                    </Text>
+                    <Text className="text-xs text-neutral-500 dark:text-neutral-400">
+                      {file.fileSize} • {file.date}
+                    </Text>
+                  </View>
                 </View>
-              </View>
-            ))}
-          </View>
+              ))}
+            </View>
+          )}
         </View>
       </Animated.ScrollView>
     </SafeAreaView>

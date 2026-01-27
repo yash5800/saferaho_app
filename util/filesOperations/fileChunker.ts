@@ -317,7 +317,7 @@ export async function decryptFileToChunks(
       url: string;
     }[];
     fileType: string;
-    status: "pending" | "decrypting" | "completed" | "error";
+    status: "pending" | "fetching" | "decrypting" | "completed" | "error";
     progress: number;
   },
   setCurrentFile: React.Dispatch<
@@ -328,7 +328,7 @@ export async function decryptFileToChunks(
         url: string;
       }[];
       fileType: string;
-      status: "pending" | "decrypting" | "completed" | "error";
+      status: "pending" | "fetching" | "decrypting" | "completed" | "error";
       progress: number;
     }>
   >,
@@ -360,6 +360,11 @@ export async function decryptFileToChunks(
   let completedChunks = 0;
 
   for (const chunk of sortedChunks) {
+    setCurrentFile((prev) => ({
+      ...prev,
+      status: "fetching",
+    }));
+
     const response = await fetch(chunk.url);
     if (!response.ok) throw new Error("Failed to fetch chunk");
 

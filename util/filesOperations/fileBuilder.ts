@@ -1,8 +1,8 @@
-// import { userFilesMetadata } from "@/context/mainContext";
+// import { UserFilesMetadata } from "@/context/mainContext";
 // import { decryptData } from "../cryptography";
 
 // export const fileBuilder = async (
-//   fileMetadata: userFilesMetadata,
+//   fileMetadata: UserFilesMetadata,
 //   masterKey,
 // ) => {
 //   try {

@@ -1,7 +1,10 @@
 import { UserDataContext } from "@/context/mainContext";
+import { showFloating } from "@/lib/floatingContoller";
 import { showTabBar } from "@/lib/tabBarContoller";
 import { SettingsProperties } from "@/Operations/Settings";
-import BottomSheet, { BottomSheetView } from "@gorhom/bottom-sheet";
+import BottomSheet, {
+  BottomSheetScrollView
+} from "@gorhom/bottom-sheet";
 import { ArrowLeft } from "lucide-react-native";
 import { useColorScheme } from "nativewind";
 import React, { useEffect, useMemo } from "react";
@@ -63,6 +66,12 @@ const SettingsOverlay = ({ sheetRef }: SettingsOverlayProps) => {
     }
   };
 
+  const handleSettingsClose = () => {
+    sheetRef.current?.close();
+    showFloating();
+    showTabBar();
+  };
+
   return (
     <BottomSheet
       ref={sheetRef}
@@ -78,15 +87,12 @@ const SettingsOverlay = ({ sheetRef }: SettingsOverlayProps) => {
         display: "none",
       }}
     >
-      <BottomSheetView>
+      <BottomSheetScrollView>
         {/* back header */}
-        <View className="w-full flex-row justify-center items-center p-4">
+        <View className="w-full flex-row justify-center items-center p-4 mt-5">
           <TouchableOpacity
             className="absolute left-4 bg-white dark:bg-slate-700 rounded-full p-2"
-            onPress={() => {
-              showTabBar();
-              sheetRef.current?.close();
-            }}
+            onPress={handleSettingsClose}
           >
             <ArrowLeft color={colorScheme === "dark" ? "white" : "gray"} />
           </TouchableOpacity>
@@ -134,7 +140,7 @@ const SettingsOverlay = ({ sheetRef }: SettingsOverlayProps) => {
             </Text>
           </TouchableOpacity>
         </View>
-      </BottomSheetView>
+      </BottomSheetScrollView>
     </BottomSheet>
   );
 };

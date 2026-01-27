@@ -1,11 +1,11 @@
 import { categeryType } from "@/app/(protected)/(tabs)/files";
-import { userFilesMetadata } from "@/context/mainContext";
+import { UserFilesMetadata } from "@/context/mainContext";
 import { csv, doc, music, pdf, xls, zip } from "@/lib/icons";
 import { formatSize } from "@/util/filesOperations/fileSize";
 import { Image, Text, TouchableOpacity, View } from "react-native";
 
 interface FileDocProps {
-  item: userFilesMetadata;
+  item: UserFilesMetadata;
   category: categeryType;
   onPress?: () => void;
 }

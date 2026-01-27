@@ -29,7 +29,7 @@ export interface UserSettings {
   enableNotifications: boolean;
 }
 
-export interface userFilesMetadata {
+export interface UserFilesMetadata {
   _id: string;
   accountId: string;
   filename: string;
@@ -37,8 +37,6 @@ export interface userFilesMetadata {
   fileType: string;
   duration?: number;
   totalChunks: number;
-  nonce: string;
-  mac: string;
   chunks: [
     {
       index: number;
@@ -52,12 +50,17 @@ export interface userFilesMetadata {
 interface UserDataContextType {
   userProfile: UserProfile | null;
   userSettings: UserSettings;
-  userFilesMetadata: userFilesMetadata[];
+  userFilesMetadata: UserFilesMetadata[];
   setUserFilesMetadata: React.Dispatch<
-    React.SetStateAction<userFilesMetadata[]>
+    React.SetStateAction<UserFilesMetadata[]>
   >;
   setUserProfile: React.Dispatch<React.SetStateAction<UserProfile | null>>;
   setUserSettings: React.Dispatch<React.SetStateAction<UserSettings>>;
+  reload: () => Promise<void>;
+  previewsByFieldId: Record<string, EncryptedPreviewPayload>;
+  setPreviewsByFieldId: React.Dispatch<
+    React.SetStateAction<Record<string, EncryptedPreviewPayload>>
+  >;
 }
 
 export const UserDataContext = createContext<UserDataContextType>({
@@ -76,12 +79,15 @@ export const UserDataContext = createContext<UserDataContextType>({
   setUserProfile: () => {},
   setUserSettings: () => {},
   setUserFilesMetadata: () => {},
+  reload: async () => {},
+  previewsByFieldId: {},
+  setPreviewsByFieldId: () => {},
 });
 
-export const FilesContext = createContext<{
-  userFilesMetadata: userFilesMetadata[];
-  previewsByFieldId: Record<string, EncryptedPreviewPayload>;
+export const FloatingContext = createContext<{
+  handleUpload: () => void;
+  handleVault: () => void;
 }>({
-  userFilesMetadata: [],
-  previewsByFieldId: {},
+  handleUpload: () => {},
+  handleVault: () => {},
 });

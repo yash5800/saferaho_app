@@ -1,9 +1,11 @@
+import { setPickingInProgress } from "@/globals/picking";
 import * as FileSystem from "expo-file-system/legacy";
 import * as IntentLauncher from "expo-intent-launcher";
 import * as Sharing from "expo-sharing";
 import { Platform } from "react-native";
 
 function getExtensionFromMime(mime: string): string {
+  console.log("Getting extension for mime:", mime);
   if (!mime) return "bin";
 
   if (mime.startsWith("image/")) {
@@ -29,6 +31,12 @@ function getExtensionFromMime(mime: string): string {
     return "docx";
 
   if (mime.includes("excel") || mime.includes("spreadsheetml")) return "xlsx";
+
+  if (mime.includes("zip") || mime.includes("compressed")) return "zip";
+  if (mime.includes("csv")) return "csv";
+
+  if (mime.includes("tar")) return "tar";
+  if (mime.includes("rar")) return "rar";
 
   return "bin";
 }
@@ -101,6 +109,7 @@ async function openIOS(uri: string, mime?: string) {
 }
 
 export async function openFile(fileUri: string, mimeType?: string) {
+  setPickingInProgress(true);
   try {
     if (Platform.OS === "android") {
       await openAndroid(fileUri, mimeType);
@@ -109,6 +118,8 @@ export async function openFile(fileUri: string, mimeType?: string) {
     }
   } catch (err) {
     console.error("Failed to open file:", err);
+  } finally {
+    setPickingInProgress(false);
   }
 }
 

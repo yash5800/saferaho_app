@@ -1,5 +1,7 @@
 import { CryptoContext } from "@/components/crypto/Crypto";
 import { RainProgressBar } from "@/components/RainProgressBar";
+import { UserDataContext } from "@/context/mainContext";
+import { showFloating } from "@/lib/floatingContoller";
 import { showTabBar } from "@/lib/tabBarContoller";
 import {
   generateRandomId,
@@ -8,10 +10,12 @@ import {
 import { pickFile } from "@/util/filesOperations/filePicker";
 import { formatSize } from "@/util/filesOperations/fileSize";
 import BottomSheet, { BottomSheetScrollView } from "@gorhom/bottom-sheet";
+import { router } from "expo-router";
 import { ArrowLeft } from "lucide-react-native";
 import { useColorScheme } from "nativewind";
 import { useContext, useEffect, useMemo, useState } from "react";
 import { BackHandler, Text, TouchableOpacity, View } from "react-native";
+import { useGetPath } from "../getPath";
 
 type UserFiles = {
   id: string;
@@ -110,17 +114,19 @@ const filesFormater = (
     status: "pending" as UserFiles["status"],
   }));
 
-interface SettingsOverlayProps {
+interface UploadOverlayProps {
   sheetRef: React.RefObject<BottomSheet | null>;
-  handleReload: () => void;
 }
 
-const UploadOverlay = ({ sheetRef, handleReload }: SettingsOverlayProps) => {
+const UploadOverlay = ({ sheetRef }: UploadOverlayProps) => {
   const snapPoints = useMemo(() => ["100%"], []);
   const { colorScheme } = useColorScheme();
   const { masterKey } = useContext(CryptoContext);
   const [uplodedFiles, setUploadedFiles] = useState<UserFiles[]>([]);
   const [isUploading, setIsUploading] = useState(false);
+  const { reload } = useContext(UserDataContext);
+
+  const currentPath = useGetPath();
 
   useEffect(() => {
     //hardware back button handling can be added here if needed
@@ -146,7 +152,17 @@ const UploadOverlay = ({ sheetRef, handleReload }: SettingsOverlayProps) => {
 
     await uploadFilesSequentially(masterKey, setUploadedFiles, formatted);
     setIsUploading(false);
-    handleReload();
+    reload();
+  };
+
+  const handleBackPress = () => {
+    sheetRef.current?.close();
+    showFloating();
+    showTabBar();
+
+    if (currentPath !== "files") {
+      router.push("/(protected)/(tabs)/files");
+    }
   };
 
   return (
@@ -164,15 +180,12 @@ const UploadOverlay = ({ sheetRef, handleReload }: SettingsOverlayProps) => {
         display: "none",
       }}
     >
-      <BottomSheetScrollView className="w-full px-4 pt-6">
+      <BottomSheetScrollView className="w-full p-4">
         {/* Back header */}
-        <View className="gap-3 flex-row justify-center items-center relative">
+        <View className="gap-3 flex-row justify-center items-center relative mt-5">
           <TouchableOpacity
             className="absolute left-0 bg-white dark:bg-slate-700 rounded-full p-2"
-            onPress={() => {
-              showTabBar();
-              sheetRef.current?.close();
-            }}
+            onPress={handleBackPress}
           >
             <ArrowLeft color={colorScheme === "dark" ? "white" : "gray"} />
           </TouchableOpacity>
