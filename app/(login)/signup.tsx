@@ -8,11 +8,11 @@ import BottomSheet from "@gorhom/bottom-sheet";
 import { Link, router } from "expo-router";
 import {
   ArrowLeft,
+  Check,
   CloudUpload,
   Eye,
   EyeOff,
   FileCheckCorner,
-  Star,
 } from "lucide-react-native";
 import React, { useContext } from "react";
 import {
@@ -70,6 +70,7 @@ const Signup = () => {
   const [inputError, setInputError] = React.useState<
     { field: string; message: string }[]
   >([]);
+  const [acceptedTerms, setAcceptedTerms] = React.useState(false);
   const [passwordLevel, setPasswordLevel] = React.useState(0);
   const [passwordVisible, setPasswordVisible] = React.useState(false);
   const [enableSignup, setEnableSignup] = React.useState(false);
@@ -80,6 +81,8 @@ const Signup = () => {
   const [showRecoveryKeys, setShowRecoveryKeys] = React.useState(false);
   const [Dloading, setDLoading] = React.useState(true);
   const [filePath, setFilePath] = React.useState<string>("");
+
+  const isDark = colorScheme === "dark";
 
   const bottomSheetRef = React.useRef<BottomSheet>(null);
 
@@ -104,7 +107,8 @@ const Signup = () => {
       passwordLevel >= 3 &&
       form.password === form.confirmPassword &&
       emailIsValid(form.email) &&
-      form.userName.length >= 6
+      form.userName.length >= 6 &&
+      acceptedTerms
     ) {
       setEnableSignup(true);
     } else {
@@ -136,6 +140,7 @@ const Signup = () => {
     passwordLevel,
     showRecoveryKeys,
     recoveryKeys,
+    acceptedTerms,
   ]);
 
   function emailIsValid(email: string) {
@@ -252,48 +257,44 @@ const Signup = () => {
           contentContainerClassName="flex-grow justify-center"
           keyboardShouldPersistTaps="handled"
         >
-          {/* back header */}
-          <View className="w-full flex-row justify-center items-center p-4">
-            <TouchableOpacity
-              className="absolute left-4 bg-white dark:bg-slate-700 rounded-full p-2"
-              onPress={() => router.replace("/(login)")}
-            >
-              <ArrowLeft color={colorScheme === "dark" ? "white" : "#BFBFBF"} />
-            </TouchableOpacity>
-            <Text className="text-lg font-semibold dark:text-white">
-              SafeRaho
-            </Text>
-          </View>
+          <View className="flex-1 justify-center items-center px-4 pb-8">
+            {/* back header */}
+            <View className="w-full flex-row justify-center items-center p-6">
+              <TouchableOpacity
+                className="absolute left-4 bg-white dark:bg-slate-700 rounded-full p-2"
+                onPress={() => router.replace("/(login)")}
+              >
+                <ArrowLeft color={colorScheme === "dark" ? "white" : "gray"} />
+              </TouchableOpacity>
+              <Text className="text-lg font-semibold dark:text-white">
+                SafeRaho
+              </Text>
+            </View>
 
-          {/* Sign up Container */}
-          <View className="flex-1 justify-center items-center px-4 pb-6 mt-2">
+            {/* Sign up Container */}
             <View className="w-full rounded-3xl bg-white flex justify-center items-center p-6 dark:bg-[#1f1f1f]">
-              <Text className="text-xl font-semibold dark:text-white">
-                Create Account
+              <Text className="text-2xl font-semibold text-center dark:text-white">
+                Create Account 🎉
+              </Text>
+              <Text className="text-center text-gray-500 dark:text-gray-400 mt-1">
+                Sign up to get started
               </Text>
 
-              <View className="justify-center items-start w-full">
-                <Text className="text-gray-800 dark:text-gray-300 mt-4 text-center font-semibold mb-2">
-                  User Name
-                </Text>
+              <View className="justify-center items-start mt-6 w-full">
                 <TextInput
-                  className={
-                    "w-full rounded-full text-zinc-900 bg-slate-200 pl-5" +
-                    " placeholder:text-zinc-400 dark:bg-slate-700 dark:text-zinc-100"
-                  }
-                  placeholder="Enter user name"
+                  className="w-full rounded-xl bg-slate-200 dark:bg-slate-700 px-5 py-4 pr-12 text-base text-zinc-900 dark:text-zinc-100"
+                  placeholder="Username"
                   placeholderTextColor={
-                    colorScheme === "dark" ? "#888888" : "#aaaaaa"
+                    colorScheme === "dark" ? "#888" : "#999"
                   }
-                  keyboardType="default"
-                  autoCapitalize="words"
+                  autoCapitalize="none"
                   onChangeText={(text) =>
                     setForm({ type: "SET_USERNAME", payload: text.trim() })
                   }
                   value={form.userName}
                 />
                 {inputError.find((err) => err.field === "userName") && (
-                  <Text className="text-red-500 mt-1 ml-2 text-xs">
+                  <Text className="text-red-600 mt-1 ml-2">
                     {
                       inputError.find((err) => err.field === "userName")
                         ?.message
@@ -301,22 +302,16 @@ const Signup = () => {
                   </Text>
                 )}
                 {form.userName.length < 6 && form.userName.length > 0 && (
-                  <Text className="text-red-500 mt-1 ml-2 text-xs">
-                    User name must be at least 6 characters long.
+                  <Text className="text-red-600 mt-1 ml-2 text-sm">
+                    Username must be at least 6 characters
                   </Text>
                 )}
 
-                <Text className="text-gray-800 dark:text-gray-300 mt-4 text-center font-semibold mb-2">
-                  Email
-                </Text>
                 <TextInput
-                  className={
-                    "w-full rounded-full text-zinc-900 bg-slate-200 pl-5" +
-                    " placeholder:text-zinc-400 dark:bg-slate-700 dark:text-zinc-100"
-                  }
-                  placeholder="Enter your email"
+                  className="w-full rounded-xl bg-slate-200 dark:bg-slate-700 px-5 py-4 pr-12 text-base text-zinc-900 dark:text-zinc-100 mt-4"
+                  placeholder="Email"
                   placeholderTextColor={
-                    colorScheme === "dark" ? "#888888" : "#aaaaaa"
+                    colorScheme === "dark" ? "#888" : "#999"
                   }
                   keyboardType="email-address"
                   autoCapitalize="none"
@@ -329,30 +324,23 @@ const Signup = () => {
                   value={form.email}
                 />
                 {inputError.find((err) => err.field === "email") && (
-                  <Text className="text-red-500 mt-1 ml-2 text-xs">
+                  <Text className="text-red-600 mt-1 ml-2">
                     {inputError.find((err) => err.field === "email")?.message}
                   </Text>
                 )}
                 {form.email && !emailIsValid(form.email) && (
-                  <Text className="text-red-500 mt-1 ml-2 text-xs">
-                    Please enter a valid email address.
+                  <Text className="text-red-600 mt-1 ml-2 text-sm">
+                    Please enter a valid email
                   </Text>
                 )}
 
-                <Text className="text-gray-800 dark:text-gray-300 mt-4 text-center font-semibold mb-2">
-                  Password
-                </Text>
-                <View className="w-full">
+                <View className="relative w-full mt-4">
                   <TextInput
-                    className={
-                      "rounded-full text-zinc-900 bg-slate-200 pl-5 pr-12" +
-                      " placeholder:text-zinc-400 dark:bg-slate-700 dark:text-zinc-100"
-                    }
-                    placeholder="Create a password"
+                    className="w-full rounded-xl bg-slate-200 dark:bg-slate-700 px-5 py-4 pr-12 text-base text-zinc-900 dark:text-zinc-100"
+                    placeholder="Password"
                     placeholderTextColor={
-                      colorScheme === "dark" ? "#888888" : "#aaaaaa"
+                      colorScheme === "dark" ? "#888" : "#999"
                     }
-                    keyboardType="default"
                     autoCapitalize="none"
                     secureTextEntry={!passwordVisible}
                     value={form.password}
@@ -361,26 +349,29 @@ const Signup = () => {
                     }
                   />
                   <TouchableOpacity
-                    className="absolute right-4 top-3"
-                    onPress={() => setPasswordVisible((prev) => !prev)}
+                    onPress={() => setPasswordVisible((v) => !v)}
+                    className="absolute right-4 top-1/2 -translate-y-1/2"
                   >
                     {passwordVisible ? (
                       <EyeOff
                         color={colorScheme === "dark" ? "white" : "gray"}
+                        size={20}
                       />
                     ) : (
-                      <Eye color={colorScheme === "dark" ? "white" : "gray"} />
+                      <Eye
+                        color={colorScheme === "dark" ? "white" : "gray"}
+                        size={20}
+                      />
                     )}
                   </TouchableOpacity>
                 </View>
                 {passwordLevel < 3 && form.password.length > 0 && (
-                  <Text className="text-red-500 mt-1 ml-2 text-xs">
-                    Password is too weak. Use at least 8 characters, including
-                    uppercase, lowercase, numbers, and special characters.
+                  <Text className="text-red-600 mt-1 ml-2 text-sm">
+                    Use uppercase, lowercase, numbers, and special characters
                   </Text>
                 )}
                 {inputError.find((err) => err.field === "password") && (
-                  <Text className="text-red-500 mt-1 ml-2 text-xs">
+                  <Text className="text-red-600 mt-1 ml-2">
                     {
                       inputError.find((err) => err.field === "password")
                         ?.message
@@ -388,20 +379,13 @@ const Signup = () => {
                   </Text>
                 )}
 
-                <Text className="text-gray-800 dark:text-gray-300 mt-4 text-center font-semibold mb-2">
-                  Confirm Password
-                </Text>
-                <View className="w-full">
+                <View className="relative w-full mt-4">
                   <TextInput
-                    className={
-                      "rounded-full text-zinc-900 bg-slate-200 pl-5 pr-12" +
-                      " placeholder:text-zinc-400 dark:bg-slate-700 dark:text-zinc-100"
-                    }
-                    placeholder="Re-enter your password"
+                    className="w-full rounded-xl bg-slate-200 dark:bg-slate-700 px-5 py-4 pr-12 text-base text-zinc-900 dark:text-zinc-100"
+                    placeholder="Confirm Password"
                     placeholderTextColor={
-                      colorScheme === "dark" ? "#888888" : "#aaaaaa"
+                      colorScheme === "dark" ? "#888" : "#999"
                     }
-                    keyboardType="default"
                     autoCapitalize="none"
                     secureTextEntry={!passwordVisible}
                     onChangeText={(text) =>
@@ -412,35 +396,38 @@ const Signup = () => {
                     }
                     value={form.confirmPassword}
                   />
-                  <TouchableOpacity
-                    className="absolute right-4 top-3"
-                    onPress={() => setPasswordVisible((prev) => !prev)}
-                  >
-                    {passwordVisible ? (
-                      <EyeOff
-                        color={colorScheme === "dark" ? "white" : "gray"}
-                      />
-                    ) : (
-                      <Eye color={colorScheme === "dark" ? "white" : "gray"} />
-                    )}
-                  </TouchableOpacity>
                 </View>
-                {inputError.find((err) => err.field === "confirmPassword") && (
-                  <Text className="text-red-500 mt-1 ml-2 text-xs">
-                    {
-                      inputError.find((err) => err.field === "confirmPassword")
-                        ?.message
-                    }
-                  </Text>
-                )}
-
-                <Text className="text-xs text-gray-600 dark:text-gray-400 mt-1 self-start">
-                  By signing up, you agree to our Terms of Service and Privacy
-                  Policy.
-                </Text>
 
                 <TouchableOpacity
-                  className={`w-full bg-black dark:bg-white rounded-full mt-4 py-4 flex-row justify-center items-center gap-2 ${!enableSignup ? "opacity-50" : ""}`}
+                  onPress={() => setAcceptedTerms((v) => !v)}
+                  className="flex-row items-center gap-3 mt-3"
+                  activeOpacity={0.8}
+                >
+                  <View
+                    className={`w-5 h-5 rounded-md border-2 items-center justify-center ${
+                      acceptedTerms
+                        ? "bg-black dark:bg-white border-black dark:border-white"
+                        : "border-gray-400"
+                    }`}
+                  >
+                    {acceptedTerms && (
+                      <Check size={14} color={isDark ? "black" : "white"} />
+                    )}
+                  </View>
+                  <Text className="text-sm text-gray-600 dark:text-gray-400 flex-1">
+                    I agree to the{" "}
+                    <Text className="font-semibold text-black dark:text-white">
+                      Terms of Service
+                    </Text>{" "}
+                    and{" "}
+                    <Text className="font-semibold text-black dark:text-white">
+                      Privacy Policy
+                    </Text>
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  className={`w-full bg-black dark:bg-white rounded-lg mt-6 py-4 flex-row justify-center items-center gap-2 ${!enableSignup ? "opacity-50" : ""}`}
                   onPress={handleSignup}
                   disabled={!enableSignup || signUpLoading}
                 >
@@ -480,70 +467,79 @@ const Signup = () => {
             pressBehavior="none"
             animationConfig={{ duration: 500 }}
           >
-            <Text className="flex-1 font-semibold text-lg text-center mb-4 dark:text-white ">
-              {"Preview Recovery Key's "}
-            </Text>
-            <TouchableOpacity className="absolute bg-[#caffb7] top-3 right-3 p-2 rounded-full">
-              {Dloading ? (
-                <ActivityIndicator color="#fff" />
-              ) : (
-                <View className="justify-center items-center flex-row gap-1">
-                  <FileCheckCorner color="#35c800" size={14} />
-                  <Text className="text-[#35c800] text-sm font-semibold">
-                    Saved
-                  </Text>
-                </View>
-              )}
-            </TouchableOpacity>
-            <View className="flex-1 flex-row justify-center flex-wrap gap-4 mb-6">
-              {recoveryKeys.map((item, index) => (
-                <View
-                  key={index}
-                  className="w-1/4 p-2 items-center rounded-md bg-gray-200 dark:bg-gray-700"
+            <View className="flex-1 px-4 pb-8">
+              <View className="flex-row justify-between items-center mb-6">
+                <Text className="text-2xl font-semibold dark:text-white">
+                  Recovery Keys 🔐
+                </Text>
+                <TouchableOpacity
+                  className={`flex-row items-center gap-2 px-3 py-2 rounded-full ${
+                    Dloading
+                      ? "bg-gray-200 dark:bg-gray-700"
+                      : "bg-green-100 dark:bg-green-900"
+                  }`}
                 >
-                  <Text className="text-gray-800 dark:text-gray-300">
-                    {item}
-                  </Text>
+                  {Dloading ? (
+                    <ActivityIndicator
+                      color={colorScheme === "dark" ? "white" : "black"}
+                      size="small"
+                    />
+                  ) : (
+                    <>
+                      <FileCheckCorner color="#22c55e" size={16} />
+                      <Text className="text-green-600 dark:text-green-400 text-xs font-semibold">
+                        Saved
+                      </Text>
+                    </>
+                  )}
+                </TouchableOpacity>
+              </View>
+
+              <Text className="text-gray-600 dark:text-gray-400 text-sm mb-4">
+                Save these 24 words in a safe place. {"You'll"} need them to
+                recover your account.
+              </Text>
+
+              <View className="bg-slate-100 dark:bg-slate-800 rounded-2xl p-4 mb-6 flex-1">
+                <View className="flex-row flex-wrap gap-3 justify-center">
+                  {recoveryKeys.map((item, index) => (
+                    <View
+                      key={index}
+                      className="bg-white dark:bg-slate-700 rounded-lg px-3 py-2 border border-slate-200 dark:border-slate-600"
+                    >
+                      <Text className="text-xs text-gray-600 dark:text-gray-400">
+                        {index + 1}
+                      </Text>
+                      <Text className="text-sm font-medium text-gray-900 dark:text-white">
+                        {item}
+                      </Text>
+                    </View>
+                  ))}
                 </View>
-              ))}
-            </View>
-            <View className="flex-1 justify-around items-center flex-row mb-5">
+              </View>
+
               <TouchableOpacity
-                className="w-[140px] bg-blue-500 rounded-full py-4 flex-row justify-center items-center gap-2 self-center"
+                className="w-full bg-black dark:bg-white rounded-lg py-4 flex-row justify-center items-center gap-2 mb-3"
+                onPress={() => backupRecoveryKeys(filePath)}
+              >
+                <CloudUpload
+                  color={colorScheme === "dark" ? "black" : "white"}
+                  size={20}
+                />
+                <Text className="text-center text-white dark:text-black font-semibold">
+                  Download Backup
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                className="w-full bg-slate-200 dark:bg-slate-700 rounded-lg py-4 flex-row justify-center items-center"
                 onPress={handleCloseRecoveryKeys}
               >
-                <Text className="text-center text-white font-semibold">
+                <Text className="text-center text-gray-900 dark:text-white font-semibold">
                   Continue
                 </Text>
               </TouchableOpacity>
-              <TouchableOpacity
-                className="w-[140px] bg-gray-700 rounded-full py-4 flex-row justify-center items-center gap-2 self-center"
-                onPress={() => backupRecoveryKeys(filePath)}
-              >
-                <CloudUpload color={"white"} size={20} />
-                <Text className="text-center text-white font-semibold">
-                  Back up
-                </Text>
-                <View
-                  className="absolute -top-1 -left-1"
-                  style={{
-                    transform: [{ rotate: "-20deg" }],
-                    shadowColor: "#000",
-                    shadowOpacity: 0.3,
-                    elevation: 5,
-                  }}
-                >
-                  <Star fill={"yellow"} color={"gold"} />
-                </View>
-              </TouchableOpacity>
             </View>
-            <Text className="text-sm font-normal text-blue-500 text-center">
-              Please save the recovery keys document in a safe place. They are
-              essential for account recovery.
-            </Text>
-            <Text className="text-xs font-medium text-green-400 text-center mt-2">
-              File automatically saved to {filePath}.
-            </Text>
           </DynamicBottomSheet>
         </ScrollView>
       </KeyboardAvoidingView>

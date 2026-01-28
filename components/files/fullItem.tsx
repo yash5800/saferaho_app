@@ -10,22 +10,22 @@ import { shareFileAsync } from "@/util/share";
 import { BlurView } from "@react-native-community/blur";
 import { Video } from "expo-av";
 import {
-    Download,
-    EllipsisVertical,
-    ExternalLink,
-    Share2,
+  Download,
+  EllipsisVertical,
+  ExternalLink,
+  Share2,
 } from "lucide-react-native";
 import { useColorScheme } from "nativewind";
 import { useContext, useEffect, useState } from "react";
 import {
-    Animated,
-    BackHandler,
-    Image,
-    Pressable,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  Animated,
+  BackHandler,
+  Image,
+  Pressable,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { CryptoContext } from "../crypto/Crypto";
 import { RainProgressBar } from "../RainProgressBar";
@@ -39,6 +39,7 @@ type FullItemProps = {
 };
 
 interface CurrentFileState {
+  filename: string;
   encryptedData: {
     index: number;
     assetId: string;
@@ -66,6 +67,7 @@ const FullItem = ({ item, animatedItem, onClose, category }: FullItemProps) => {
   const { colorScheme } = useColorScheme();
   const { masterKey } = useContext(CryptoContext);
   const [currentFile, setCurrentFile] = useState<CurrentFileState>({
+    filename: "",
     encryptedData: [],
     fileType: "",
     status: "pending",
@@ -81,6 +83,7 @@ const FullItem = ({ item, animatedItem, onClose, category }: FullItemProps) => {
     setDecryptedUri(null);
 
     const initialFile: CurrentFileState = {
+      filename: item.filename,
       encryptedData: item.chunks,
       fileType: item.fileType,
       status: "pending",

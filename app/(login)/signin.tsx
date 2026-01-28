@@ -48,6 +48,7 @@ const Signin = () => {
   const { setAuthenticated } = useContext(AuthContext);
   const [signInLoading, setSignInLoading] = React.useState(false);
   const { setIsLocked } = useContext(CryptoContext);
+  const isDark = colorScheme === "dark";
 
   const togglePasswordVisibility = () => {
     setPasswordVisible(!passwordVisible);
@@ -93,43 +94,38 @@ const Signin = () => {
           contentContainerClassName="flex-grow justify-center"
           keyboardShouldPersistTaps="handled"
         >
-          {/* back header */}
-          <View className="w-full flex-row justify-center items-center p-4">
-            <TouchableOpacity
-              className="absolute left-4 bg-white dark:bg-slate-700 rounded-full p-2"
-              onPress={() => router.replace("/(login)")}
-            >
-              <ArrowLeft color={colorScheme === "dark" ? "white" : "gray"} />
-            </TouchableOpacity>
-            <Text className="text-lg font-semibold dark:text-white">
-              SafeRaho
-            </Text>
-          </View>
-
-          {/* Sign in Container */}
           <View className="flex-1 justify-center items-center px-4 pb-8">
+            {/* back header */}
+            <View className="w-full flex-row justify-center items-center p-6">
+              <TouchableOpacity
+                className="absolute left-4 bg-white dark:bg-slate-700 rounded-full p-2"
+                onPress={() => router.replace("/(login)")}
+              >
+                <ArrowLeft color={colorScheme === "dark" ? "white" : "gray"} />
+              </TouchableOpacity>
+              <Text className="text-lg font-semibold dark:text-white">
+                SafeRaho
+              </Text>
+            </View>
+
+            {/* Sign in Container */}
             <View className="w-full rounded-3xl bg-white flex justify-center items-center p-6  dark:bg-[#1f1f1f]">
-              <Text className="text-xl font-semibold dark:text-white">
-                Welcome Back!
+              <Text className="text-2xl font-semibold text-center dark:text-white">
+                Welcome Back 👋
+              </Text>
+              <Text className="text-center text-gray-500 dark:text-gray-400 mt-1">
+                Sign in to continue
               </Text>
 
-              <View className="justify-center items-start mt-3 w-full">
-                <Text className="text-gray-800 dark:text-gray-300 mt-4 text-center font-semibold mb-2">
-                  Email / Username
-                </Text>
+              <View className="justify-center items-start mt-6 w-full">
                 <TextInput
-                  className={
-                    "w-full rounded-full text-zinc-900 bg-slate-200 pl-5" +
-                    " placeholder:text-zinc-400 dark:bg-slate-700 dark:text-zinc-100"
-                  }
-                  placeholder="Enter your email/username "
-                  placeholderTextColor={
-                    colorScheme === "dark" ? "#888888" : "#aaaaaa"
-                  }
-                  keyboardType="email-address"
+                  className="w-full rounded-xl bg-slate-200 dark:bg-slate-700 px-5 py-4 pr-12 text-base text-zinc-900 dark:text-zinc-100"
+                  placeholder="Email or Username"
+                  placeholderTextColor={isDark ? "#888" : "#999"}
+                  secureTextEntry={!passwordVisible}
                   autoCapitalize="none"
-                  onChangeText={(text) =>
-                    setForm({ type: "SET_USER_INPUT", payload: text })
+                  onChangeText={(t) =>
+                    setForm({ type: "SET_USER_INPUT", payload: t })
                   }
                 />
                 {inputError && inputError.field === "userInput" ? (
@@ -137,36 +133,25 @@ const Signin = () => {
                     {inputError.message}
                   </Text>
                 ) : null}
-                <Text className="text-gray-800 dark:text-gray-300 mt-4 text-center font-semibold mb-2">
-                  Password
-                </Text>
-                <View className="w-full">
+                <View className="relative w-full mt-4">
                   <TextInput
-                    className={
-                      "rounded-full text-zinc-900 bg-slate-200 pl-5" +
-                      " placeholder:text-zinc-400 dark:bg-slate-700 dark:text-zinc-100 divide-x-8"
-                    }
-                    placeholder="Enter your password"
-                    placeholderTextColor={
-                      colorScheme === "dark" ? "#888888" : "#aaaaaa"
-                    }
-                    keyboardType="default"
-                    autoCapitalize="none"
+                    className="w-full rounded-xl bg-slate-200 dark:bg-slate-700 px-5 py-4 pr-12 text-base text-zinc-900 dark:text-zinc-100"
+                    placeholder="Password"
+                    placeholderTextColor={isDark ? "#888" : "#999"}
                     secureTextEntry={!passwordVisible}
-                    onChangeText={(text) =>
-                      setForm({ type: "SET_PASSWORD", payload: text.trim() })
+                    autoCapitalize="none"
+                    onChangeText={(t) =>
+                      setForm({ type: "SET_PASSWORD", payload: t })
                     }
                   />
                   <TouchableOpacity
-                    className="absolute right-4 top-3"
-                    onPress={togglePasswordVisibility}
+                    onPress={() => setPasswordVisible((v) => !v)}
+                    className="absolute right-4 top-1/2 -translate-y-1/2"
                   >
                     {passwordVisible ? (
-                      <EyeOff
-                        color={colorScheme === "dark" ? "white" : "gray"}
-                      />
+                      <EyeOff color={isDark ? "white" : "gray"} size={20} />
                     ) : (
-                      <Eye color={colorScheme === "dark" ? "white" : "gray"} />
+                      <Eye color={isDark ? "white" : "gray"} size={20} />
                     )}
                   </TouchableOpacity>
                 </View>
@@ -177,12 +162,12 @@ const Signin = () => {
                 ) : null}
                 <Link
                   href="/(login)/forgot"
-                  className="text-base text-gray-600 font-medium mt-3 self-end dark:text-gray-400"
+                  className="text-sm text-gray-600 font-medium mt-3 self-end dark:text-gray-400"
                 >
-                  Forgot your password?
+                  Forgot password?
                 </Link>
                 <TouchableOpacity
-                  className="w-full bg-black dark:bg-white rounded-full mt-6 py-4 flex-row justify-center items-center gap-2"
+                  className="w-full bg-black dark:bg-white rounded-lg mt-6 py-4 flex-row justify-center items-center gap-2"
                   onPress={handleSignIn}
                   disabled={signInLoading}
                 >

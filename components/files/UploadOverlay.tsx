@@ -175,6 +175,7 @@ const UploadOverlay = ({ sheetRef }: UploadOverlayProps) => {
       enableContentPanningGesture={false}
       backgroundStyle={{
         backgroundColor: colorScheme === "dark" ? "#181818" : "#f3f4f6",
+        borderRadius: 0,
       }}
       handleIndicatorStyle={{
         display: "none",

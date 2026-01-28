@@ -2,9 +2,7 @@ import { UserDataContext } from "@/context/mainContext";
 import { showFloating } from "@/lib/floatingContoller";
 import { showTabBar } from "@/lib/tabBarContoller";
 import { SettingsProperties } from "@/Operations/Settings";
-import BottomSheet, {
-  BottomSheetScrollView
-} from "@gorhom/bottom-sheet";
+import BottomSheet, { BottomSheetScrollView } from "@gorhom/bottom-sheet";
 import { ArrowLeft } from "lucide-react-native";
 import { useColorScheme } from "nativewind";
 import React, { useEffect, useMemo } from "react";
@@ -82,6 +80,7 @@ const SettingsOverlay = ({ sheetRef }: SettingsOverlayProps) => {
       enableContentPanningGesture={false}
       backgroundStyle={{
         backgroundColor: colorScheme === "dark" ? "#181818" : "#f3f4f6",
+        borderRadius: 0,
       }}
       handleIndicatorStyle={{
         display: "none",
@@ -89,7 +88,7 @@ const SettingsOverlay = ({ sheetRef }: SettingsOverlayProps) => {
     >
       <BottomSheetScrollView>
         {/* back header */}
-        <View className="w-full flex-row justify-center items-center p-4 mt-5">
+        <View className="w-full flex-row justify-center items-center p-4 ">
           <TouchableOpacity
             className="absolute left-4 bg-white dark:bg-slate-700 rounded-full p-2"
             onPress={handleSettingsClose}

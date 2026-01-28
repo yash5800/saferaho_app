@@ -311,6 +311,7 @@ export async function uploadFilesSequentially(
 
 export async function decryptFileToChunks(
   currentFile: {
+    filename: string;
     encryptedData: {
       index: number;
       assetId: string;
@@ -322,6 +323,7 @@ export async function decryptFileToChunks(
   },
   setCurrentFile: React.Dispatch<
     React.SetStateAction<{
+      filename: string;
       encryptedData: {
         index: number;
         assetId: string;
@@ -344,7 +346,7 @@ export async function decryptFileToChunks(
 
   const extension = getExtensionFromMime(currentFile?.fileType || "");
 
-  const outputPath = `${RNFS.CachesDirectoryPath}/reconstructed_${Date.now()}.${extension}`;
+  const outputPath = `${RNFS.CachesDirectoryPath}/${currentFile.filename.split(".")[0]}_${Date.now()}.${extension}`;
 
   const sortedChunks = [...currentFile.encryptedData].sort(
     (a, b) => a.index - b.index,
