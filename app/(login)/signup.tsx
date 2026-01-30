@@ -12,7 +12,6 @@ import {
   CloudUpload,
   Eye,
   EyeOff,
-  FileCheckCorner,
 } from "lucide-react-native";
 import React, { useContext } from "react";
 import {
@@ -467,78 +466,91 @@ const Signup = () => {
             pressBehavior="none"
             animationConfig={{ duration: 500 }}
           >
-            <View className="flex-1 px-4 pb-8">
-              <View className="flex-row justify-between items-center mb-6">
-                <Text className="text-2xl font-semibold dark:text-white">
-                  Recovery Keys 🔐
-                </Text>
+            <View className="flex-1 px-6 pb-10 bg-white dark:bg-slate-950">
+              {/* Header Section */}
+              <View className="flex-row justify-between items-end mb-8 mt-4">
+                <View>
+                  <Text className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">
+                    Recovery Keys
+                  </Text>
+                  <Text className="text-slate-500 dark:text-slate-400 mt-1 font-medium">
+                    Security Vault 🔐
+                  </Text>
+                </View>
+
                 <TouchableOpacity
-                  className={`flex-row items-center gap-2 px-3 py-2 rounded-full ${
+                  activeOpacity={0.8}
+                  className={`px-4 py-2 rounded-2xl border ${
                     Dloading
-                      ? "bg-gray-200 dark:bg-gray-700"
-                      : "bg-green-100 dark:bg-green-900"
+                      ? "bg-slate-100 border-slate-200 dark:bg-slate-800 dark:border-slate-700"
+                      : "bg-emerald-50 border-emerald-100 dark:bg-emerald-950/30 dark:border-emerald-500/30"
                   }`}
                 >
                   {Dloading ? (
-                    <ActivityIndicator
-                      color={colorScheme === "dark" ? "white" : "black"}
-                      size="small"
-                    />
+                    <ActivityIndicator size="small" color="#64748b" />
                   ) : (
-                    <>
-                      <FileCheckCorner color="#22c55e" size={16} />
-                      <Text className="text-green-600 dark:text-green-400 text-xs font-semibold">
-                        Saved
+                    <View className="flex-row items-center gap-2">
+                      <View className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                      <Text className="text-emerald-700 dark:text-emerald-400 text-xs font-bold uppercase tracking-wider">
+                        Verified
                       </Text>
-                    </>
+                    </View>
                   )}
                 </TouchableOpacity>
               </View>
 
-              <Text className="text-gray-600 dark:text-gray-400 text-sm mb-4">
-                Save these 24 words in a safe place. {"You'll"} need them to
-                recover your account.
-              </Text>
-
-              <View className="bg-slate-100 dark:bg-slate-800 rounded-2xl p-4 mb-6 flex-1">
-                <View className="flex-row flex-wrap gap-3 justify-center">
-                  {recoveryKeys.map((item, index) => (
-                    <View
-                      key={index}
-                      className="bg-white dark:bg-slate-700 rounded-lg px-3 py-2 border border-slate-200 dark:border-slate-600"
-                    >
-                      <Text className="text-xs text-gray-600 dark:text-gray-400">
-                        {index + 1}
-                      </Text>
-                      <Text className="text-sm font-medium text-gray-900 dark:text-white">
-                        {item}
-                      </Text>
-                    </View>
-                  ))}
-                </View>
+              {/* Warning Banner */}
+              <View className="bg-amber-50 dark:bg-amber-950/20 border border-amber-100 dark:border-amber-900/30 p-4 rounded-2xl mb-6">
+                <Text className="text-amber-800 dark:text-amber-400 text-sm leading-5 font-medium">
+                  ⚠️ Save these 24 words in a physical safe. Anyone with these
+                  keys can access your entire storage.
+                </Text>
               </View>
 
-              <TouchableOpacity
-                className="w-full bg-black dark:bg-white rounded-lg py-4 flex-row justify-center items-center gap-2 mb-3"
-                onPress={() => backupRecoveryKeys(filePath)}
-              >
-                <CloudUpload
-                  color={colorScheme === "dark" ? "black" : "white"}
-                  size={20}
-                />
-                <Text className="text-center text-white dark:text-black font-semibold">
-                  Download Backup
-                </Text>
-              </TouchableOpacity>
+              {/* Keys Grid - The "Vault" */}
+              <View className="flex-1 bg-slate-50 dark:bg-slate-900/50 rounded-3xl border border-slate-100 dark:border-slate-800 p-4 mb-8 shadow-inner">
+                <ScrollView showsVerticalScrollIndicator={false}>
+                  <View className="flex-row flex-wrap justify-between gap-y-3">
+                    {recoveryKeys.map((item, index) => (
+                      <View
+                        key={index}
+                        style={{ width: "48%" }}
+                        className="bg-white dark:bg-slate-800/80 rounded-xl p-3 border border-slate-200 dark:border-slate-700 shadow-sm flex-row items-center"
+                      >
+                        <Text className="text-[10px] font-bold text-slate-400 dark:text-slate-500 w-5">
+                          {String(index + 1).padStart(2, "0")}
+                        </Text>
+                        <Text className="text-sm font-semibold text-slate-800 dark:text-slate-200">
+                          {item}
+                        </Text>
+                      </View>
+                    ))}
+                  </View>
+                </ScrollView>
+              </View>
 
-              <TouchableOpacity
-                className="w-full bg-slate-200 dark:bg-slate-700 rounded-lg py-4 flex-row justify-center items-center"
-                onPress={handleCloseRecoveryKeys}
-              >
-                <Text className="text-center text-gray-900 dark:text-white font-semibold">
-                  Continue
-                </Text>
-              </TouchableOpacity>
+              {/* Actions */}
+              <View className="gap-4">
+                <TouchableOpacity
+                  className="w-full bg-indigo-600 dark:bg-indigo-500 shadow-lg shadow-indigo-500/30 rounded-2xl py-4 flex-row justify-center items-center gap-3"
+                  onPress={() => backupRecoveryKeys(filePath)}
+                >
+                  <CloudUpload color="white" size={22} />
+                  <Text className="text-white text-lg font-bold">
+                    Download Backup
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  activeOpacity={0.7}
+                  className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl py-4"
+                  onPress={handleCloseRecoveryKeys}
+                >
+                  <Text className="text-center text-slate-600 dark:text-slate-400 font-bold text-lg">
+                    {"I've"} Secured My Keys
+                  </Text>
+                </TouchableOpacity>
+              </View>
             </View>
           </DynamicBottomSheet>
         </ScrollView>

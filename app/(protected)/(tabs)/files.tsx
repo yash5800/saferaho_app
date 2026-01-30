@@ -5,10 +5,15 @@ import SettingsOverlay from "@/components/SettingsOverlay";
 import { UserDataContext } from "@/context/mainContext";
 import { hideFloating, showFloating } from "@/lib/floatingContoller";
 import { hideTabBar, showTabBar } from "@/lib/tabBarContoller";
+import { useCategory } from "@/stateshub/useCategory";
 import BottomSheet from "@gorhom/bottom-sheet";
-import { useColorScheme } from "nativewind";
+import { router } from "expo-router";
 import React, { useCallback, useContext, useEffect, useState } from "react";
-import { NativeScrollEvent, NativeSyntheticEvent } from "react-native";
+import {
+  BackHandler,
+  NativeScrollEvent,
+  NativeSyntheticEvent,
+} from "react-native";
 import { useSharedValue } from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -16,22 +21,33 @@ export type categeryType =
   | "photos"
   | "videos"
   | "documents"
+  | "apps"
+  | "compressed"
   | "audio"
   | "others";
 
 const Files = () => {
   const { reload } = useContext(UserDataContext);
+  const { category, setCategory } = useCategory((state) => state);
   const settingRef = React.useRef<BottomSheet>(null);
   const lastY = useSharedValue(0);
-  const { colorScheme } = useColorScheme();
-  const [category, setCategory] = useState<categeryType>("photos");
   const currentPath = useGetPath();
   const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
     if (currentPath !== "profile") {
+      showTabBar();
       showFloating();
     }
+
+    const subscribe = BackHandler.addEventListener("hardwareBackPress", () => {
+      router.back();
+      return true;
+    });
+
+    return () => {
+      subscribe.remove();
+    };
   }, [currentPath]);
 
   const handleScroll = useCallback(
@@ -48,7 +64,7 @@ const Files = () => {
 
       lastY.value = currentOffset;
     },
-    [],
+    [lastY],
   );
 
   const handleSettings = () => {
@@ -68,16 +84,15 @@ const Files = () => {
       <Gallery
         ListHeaderComponent={() => (
           <FileHeader
-            colorScheme={colorScheme}
             handleSettings={handleSettings}
             category={category}
             setCategory={setCategory}
           />
         )}
         scrollHandler={handleScroll}
-        category={category}
         handleReload={handleReload}
         refreshing={refreshing}
+        category={category}
       />
       <SettingsOverlay sheetRef={settingRef} />
     </SafeAreaView>

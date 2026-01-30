@@ -14,10 +14,10 @@ const FilePreview = ({ fileId, category, onPress }: FilePreviewProps) => {
   const [preview, setPreview] = React.useState<string | null>(null);
 
   useEffect(() => {
-    // 🚨 RESET immediately to avoid stale reuse
     setPreview(null);
 
     const cached = previewCache.get(fileId);
+    console.log("Cached preview for fileId", fileId, ":", cached);
     if (cached) {
       setPreview(cached);
       return;
@@ -31,7 +31,7 @@ const FilePreview = ({ fileId, category, onPress }: FilePreviewProps) => {
     return () => {
       unsubscribe();
     };
-  }, [fileId, category]);
+  }, [fileId]);
 
   if (!preview) {
     return <SkeletonThumbnail category={category} />;

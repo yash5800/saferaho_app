@@ -20,31 +20,54 @@ import FileDoc from "./fileDoc";
 import FilePreview from "./filePreview";
 import FullItem from "./fullItem";
 
+const fileTypes = {
+  photos: ["image/"],
+  videos: ["video/"],
+  audio: ["audio/"],
+
+  documents: [
+    "application/pdf",
+    "application/msword",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    "application/vnd.ms-excel",
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    "application/vnd.ms-powerpoint",
+    "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+    "text/plain",
+  ],
+
+  compressed: [
+    "application/zip",
+    "application/x-zip-compressed",
+    "application/x-rar-compressed",
+    "application/x-7z-compressed",
+    "application/gzip",
+  ],
+
+  apps: ["application/vnd.android.package-archive"],
+
+  others: [],
+} as const;
+
+const matchesMime = (mime: string, list: readonly string[]) =>
+  list.some((m) => mime.startsWith(m));
+
 interface GalleryProps {
   ListHeaderComponent: React.ComponentType<any> | null;
-  category: categeryType;
   scrollHandler: any;
+  category: categeryType;
   handleReload: () => void;
   refreshing?: boolean;
 }
 
-const fileTypes = {
-  photos: "image/",
-  videos: "video/",
-  documents: "application/",
-  audio: "audio/",
-  others: "other/",
-};
-
 const Gallery = ({
   ListHeaderComponent,
-  category,
   scrollHandler,
   handleReload,
   refreshing,
+  category,
 }: GalleryProps) => {
-  const { previewsByFieldId, userFilesMetadata, reload } =
-    useContext(UserDataContext);
+  const { previewsByFieldId, userFilesMetadata } = useContext(UserDataContext);
   const { masterKey } = useContext(CryptoContext);
   const { colorScheme } = useColorScheme();
 
@@ -52,28 +75,40 @@ const Gallery = ({
   const [selectedItem, setSelectedItem] = useState<UserFilesMetadata | null>(
     null,
   );
+
   const previewsRef = useRef(previewsByFieldId);
 
-  useEffect(() => {
-    previewCache.clear();
-    previewLoading.clear();
-  }, [category]);
+  /*  cache reset  */
+  // useEffect(() => {
+  //   previewCache.clear();
+  //   previewLoading.clear();
+  // }, [category]);
 
   useEffect(() => {
     previewsRef.current = previewsByFieldId;
+    console.log(
+      "Updated previewsRef with new previewsByFieldId",
+      previewsByFieldId,
+    );
   }, [previewsByFieldId]);
 
+  /*  preview decrypt logic  */
   const decryptAndCachePreview = async (fileId: string) => {
+    console.log("masterKey available:", masterKey);
     if (!masterKey) return;
+
+    console.log("Starting preview decrypt for fileId:", fileId);
 
     const previewMetadata = previewsRef.current[fileId];
     if (!previewMetadata) return;
 
+    console.log("Decrypting preview for fileId:", fileId);
+
     try {
       const base64Preview = await buildPreviewImage(previewMetadata, masterKey);
       setPreview(fileId, base64Preview);
-    } catch (error) {
-      console.error("Preview decrypt failed:", fileId, error);
+    } catch (err) {
+      console.error("Preview decrypt failed:", fileId, err);
     }
   };
 
@@ -81,6 +116,8 @@ const Gallery = ({
     if (previewCache.has(fileId) || previewLoading.has(fileId)) return;
 
     previewLoading.add(fileId);
+
+    console.log("Requesting preview decrypt for fileId:", fileId);
     try {
       await decryptAndCachePreview(fileId);
     } finally {
@@ -88,79 +125,91 @@ const Gallery = ({
     }
   };
 
-  function evictInvisiblePreviews(visibleFileIds: string[]) {
+  const evictInvisiblePreviews = (visibleIds: string[]) => {
     for (const fileId of previewCache.keys()) {
-      if (!visibleFileIds.includes(fileId)) {
+      if (!visibleIds.includes(fileId)) {
         previewCache.delete(fileId);
       }
     }
-  }
+  };
 
-  // 👀 Viewability handler
+  /*  viewability handler  */
   const onViewableItemsChanged = useRef(
     ({ viewableItems }: { viewableItems: any[] }) => {
-      viewableItems.forEach((item) => {
-        const fileId = item.item?._id;
-        if (!fileId) return;
+      if (category !== "photos" && category !== "videos") return;
 
-        if (category !== "photos" && category !== "videos") return;
-        requestPreviewDecrypt(fileId);
+      viewableItems.forEach((v) => {
+        const fileId = v.item?._id;
+        if (fileId) requestPreviewDecrypt(fileId);
       });
 
-      // 🧹 evict old previews
-      const visibleIds = viewableItems.map((v) => v.item?._id).filter(Boolean);
-
-      evictInvisiblePreviews(visibleIds);
+      const visibleIds = viewableItems
+        .map((v) => v.item?._id)
+        .filter((id) => id !== undefined);
+      evictInvisiblePreviews(visibleIds as string[]);
     },
   ).current;
 
+  // /*  initial preview requests  */
+  // for (const file of galleryFiles) {
+  //   requestPreviewDecrypt(file._id);
+  // }
+
+  /*  FILTER FILES  */
   useEffect(() => {
-    const filteredFiles = userFilesMetadata
+    const filtered = userFilesMetadata
       .filter((file) => {
+        const mime = file.fileType ?? "";
+
         switch (category) {
           case "photos":
-            return (
-              file.fileType.startsWith(fileTypes.photos) &&
-              previewsByFieldId[file._id]
-            );
+            return matchesMime(mime, fileTypes.photos);
+
           case "videos":
-            return (
-              file.fileType.startsWith(fileTypes.videos) &&
-              previewsByFieldId[file._id]
-            );
-          case "documents":
-            return file.fileType.startsWith(fileTypes.documents);
+            return matchesMime(mime, fileTypes.videos);
+
           case "audio":
-            return file.fileType.startsWith(fileTypes.audio);
+            return matchesMime(mime, fileTypes.audio);
+
+          case "documents":
+            return matchesMime(mime, fileTypes.documents);
+
+          case "compressed":
+            return matchesMime(mime, fileTypes.compressed);
+
+          case "apps":
+            return matchesMime(mime, fileTypes.apps);
+
           case "others":
-            return (
-              !file.fileType.startsWith(fileTypes.photos) &&
-              !file.fileType.startsWith(fileTypes.videos) &&
-              !file.fileType.startsWith(fileTypes.documents) &&
-              !file.fileType.startsWith(fileTypes.audio)
+            return !(
+              matchesMime(mime, fileTypes.photos) ||
+              matchesMime(mime, fileTypes.videos) ||
+              matchesMime(mime, fileTypes.audio) ||
+              matchesMime(mime, fileTypes.documents) ||
+              matchesMime(mime, fileTypes.compressed) ||
+              matchesMime(mime, fileTypes.apps)
             );
+
           default:
             return false;
         }
       })
       .sort((a, b) => b._createdAt.localeCompare(a._createdAt));
 
-    setGalleryFiles(filteredFiles);
-  }, [previewsByFieldId, userFilesMetadata, category]);
+    setGalleryFiles(filtered);
+  }, [userFilesMetadata, category]);
 
+  /*  full item modal  */
   const scaleFull = useSharedValue(0);
 
-  const animateFullItem = useAnimatedStyle(() => {
-    return {
-      opacity: scaleFull.value,
-      transform: [{ scale: 0.95 + scaleFull.value * 0.05 }],
-    };
-  });
+  const animatedFullStyle = useAnimatedStyle(() => ({
+    opacity: scaleFull.value,
+    transform: [{ scale: 0.95 + scaleFull.value * 0.05 }],
+  }));
 
   const openFullItem = (item: UserFilesMetadata) => {
     setSelectedItem(item);
     scaleFull.value = withTiming(1, { duration: 250 });
-
     hideTabBar();
     hideFloating();
   };
@@ -169,26 +218,20 @@ const Gallery = ({
     scaleFull.value = withTiming(0, { duration: 200 }, () => {
       runOnJS(setSelectedItem)(null);
     });
-
     showTabBar();
     showFloating();
   };
 
+  /*  UI  */
   return (
     <>
       <FlashList
+        key={category}
         data={galleryFiles}
         numColumns={category === "photos" || category === "videos" ? 3 : 1}
-        extraData={category}
         keyExtractor={(item) => item._id}
-        renderItem={({ item }) => {
-          if (
-            (category === "photos" || category === "videos") &&
-            !previewCache.has(item._id)
-          ) {
-            requestPreviewDecrypt(item._id);
-          }
-          return category === "photos" || category === "videos" ? (
+        renderItem={({ item }) =>
+          category === "photos" || category === "videos" ? (
             <FilePreview
               fileId={item._id}
               category={category}
@@ -200,8 +243,8 @@ const Gallery = ({
               category={category}
               onPress={() => openFullItem(item)}
             />
-          );
-        }}
+          )
+        }
         ListHeaderComponent={ListHeaderComponent}
         ListEmptyComponent={
           <View className="flex-1 items-center justify-center py-20 px-6">
@@ -213,29 +256,26 @@ const Gallery = ({
               Nothing found
             </Text>
             <Text className="mt-2 text-center text-sm text-gray-500 dark:text-gray-500">
-              No {category === "others" ? "files" : category} in this category
-              yet.
-              {"\n"}Upload some files to get started!
+              No {category === "others" ? "files" : category} yet.
+              {"\n"}Upload files to get started!
             </Text>
           </View>
         }
         onViewableItemsChanged={onViewableItemsChanged}
         viewabilityConfig={{ itemVisiblePercentThreshold: 30 }}
-        contentContainerStyle={{
-          paddingHorizontal: 2,
-          position: "relative",
-        }}
         onScroll={scrollHandler}
         scrollEventThrottle={16}
-        refreshing={false}
+        refreshing={refreshing}
         onRefresh={handleReload}
+        contentContainerStyle={{ paddingHorizontal: 2 }}
       />
+
       {selectedItem && (
         <FullItem
           item={selectedItem}
           category={category}
           onClose={closeFullItem}
-          animatedItem={animateFullItem}
+          animatedItem={animatedFullStyle}
         />
       )}
     </>

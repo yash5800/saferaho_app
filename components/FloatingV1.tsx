@@ -48,7 +48,7 @@ const FloatingV1 = () => {
     text: "#ffffff",
   };
 
-  const floatingScale = useSharedValue(1);
+  const floatingScale = useSharedValue(0);
 
   useEffect(() => {
     registerFloating(

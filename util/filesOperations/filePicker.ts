@@ -10,9 +10,13 @@ export async function pickFile() {
       multiple: true,
     });
 
+    console.log("File picker result:", result);
+
     if (result.canceled) return null;
 
     const files = result.assets;
+
+    console.log("Files picked:", files);
 
     return files.map((file) => ({
       name: file.name,

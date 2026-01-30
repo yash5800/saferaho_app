@@ -13,10 +13,13 @@ import {
   videos,
 } from "@/lib/icons";
 import { hideTabBar, showTabBar } from "@/lib/tabBarContoller";
+import { useCategory } from "@/stateshub/useCategory";
 import { formatSize } from "@/util/filesOperations/fileSize";
 import { usageItemsFilter } from "@/util/home/usageItems";
+import { router } from "expo-router";
 import { useContext, useEffect, useMemo, useState } from "react";
 import {
+  BackHandler,
   Image,
   RefreshControl,
   Text,
@@ -30,8 +33,7 @@ import Animated, {
   useSharedValue,
 } from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
-
-/* ----------------------------- helpers ----------------------------- */
+import { categeryType } from "./files";
 
 const getFileIcon = (fileType: string) => {
   const normalized = fileType?.toLowerCase() || "";
@@ -60,26 +62,59 @@ const formatCreatedDate = (createdAt: string) => {
   });
 };
 
-/* ------------------------------ screen ----------------------------- */
-
+// TODO : Implement vault functionality in home screen
 const Home = () => {
   const { userFilesMetadata, reload } = useContext(UserDataContext);
   const currentPath = useGetPath();
   const lastY = useSharedValue(0);
+  const { setCategory } = useCategory((state) => state);
 
   const [refreshing, setRefreshing] = useState(false);
   const [usageItems, setUsageItems] = useState([
-    { name: "Images", icon: images, total: 0, size: 0, percent: 0 },
-    { name: "Videos", icon: videos, total: 0, size: 0, percent: 0 },
-    { name: "Documents", icon: documents, total: 0, size: 0, percent: 0 },
-    { name: "Music", icon: music, total: 0, size: 0, percent: 0 },
-    { name: "Apps", icon: apps, total: 0, size: 0, percent: 0 },
-    { name: "Compressed", icon: compressed, total: 0, size: 0, percent: 0 },
-    { name: "Others", icon: others, total: 0, size: 0, percent: 0 },
-    { name: "Vault", icon: vault, total: 0, size: 0, percent: 0 },
+    {
+      name: "Images",
+      icon: images,
+      tab: "photos",
+      total: 0,
+      size: 0,
+      percent: 0,
+    },
+    {
+      name: "Videos",
+      icon: videos,
+      tab: "videos",
+      total: 0,
+      size: 0,
+      percent: 0,
+    },
+    {
+      name: "Documents",
+      icon: documents,
+      tab: "documents",
+      total: 0,
+      size: 0,
+      percent: 0,
+    },
+    { name: "Music", icon: music, tab: "audio", total: 0, size: 0, percent: 0 },
+    { name: "Apps", icon: apps, tab: "apps", total: 0, size: 0, percent: 0 },
+    {
+      name: "Compressed",
+      icon: compressed,
+      tab: "compressed",
+      total: 0,
+      size: 0,
+      percent: 0,
+    },
+    {
+      name: "Others",
+      icon: others,
+      tab: "others",
+      total: 0,
+      size: 0,
+      percent: 0,
+    },
+    { name: "Vault", icon: vault, tab: "vault", total: 0, size: 0, percent: 0 },
   ]);
-
-  /* ----------------------------- effects ---------------------------- */
 
   useEffect(() => {
     const updatedUsageItems = usageItemsFilter({
@@ -92,9 +127,22 @@ const Home = () => {
 
   useEffect(() => {
     if (currentPath !== "profile") showFloating();
-  }, [currentPath]);
 
-  /* ----------------------------- actions ---------------------------- */
+    const backHandler = BackHandler.addEventListener(
+      "hardwareBackPress",
+      () => {
+        if (currentPath === "home") {
+          BackHandler.exitApp(); // ⛔ close app
+          return true;
+        }
+        return false; // 🔙 normal back
+      },
+    );
+
+    return () => {
+      backHandler.remove();
+    };
+  }, [currentPath]);
 
   const handleRefresh = async () => {
     setRefreshing(true);
@@ -129,8 +177,6 @@ const Home = () => {
     lastY.value = y;
   });
 
-  /* ------------------------------ data ------------------------------ */
-
   const recentFiles = useMemo(
     () =>
       [...userFilesMetadata]
@@ -149,6 +195,15 @@ const Home = () => {
     [userFilesMetadata],
   );
 
+  const redirect = (tab: categeryType | "vault") => {
+    if (tab === "vault") {
+      router.push("/(protected)/(tabs)/vault");
+      return;
+    }
+    setCategory(tab);
+    router.push("/(protected)/(tabs)/files");
+  };
+
   return (
     <SafeAreaView className="flex-1 bg-[#f4f7f8] dark:bg-[#0f0f0f]">
       <Animated.ScrollView
@@ -159,7 +214,7 @@ const Home = () => {
           <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
         }
       >
-        {/* ---------------- Header ---------------- */}
+        {/* Header  */}
         <View className="flex-row items-center gap-3 mb-5">
           <View className="w-12 h-12 rounded-full bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 items-center justify-center">
             <Text className="text-xl font-bold dark:text-white">A</Text>
@@ -192,6 +247,7 @@ const Home = () => {
               key={item.name}
               activeOpacity={0.85}
               className="w-[47%] bg-white dark:bg-neutral-900 rounded-2xl p-4 border border-neutral-200 dark:border-neutral-800"
+              onPress={() => redirect(item.tab as categeryType | "vault")}
             >
               <View className="flex-row justify-between items-start">
                 {/* Top */}
@@ -203,26 +259,28 @@ const Home = () => {
                     />
                   </View>
                 </View>
-                <View className="flex-1 items-end">
-                  <Text className="text-xs font-medium text-neutral-700 dark:text-neutral-300">
-                    {formatSize(item.size ?? 0)}
-                  </Text>
+                {item.name !== "Vault" && (
+                  <View className="flex-1 items-end">
+                    <Text className="text-xs font-medium text-neutral-700 dark:text-neutral-300">
+                      {formatSize(item.size ?? 0)}
+                    </Text>
 
-                  <View className="mt-1 w-14 h-1.5 rounded-full bg-neutral-200 dark:bg-neutral-800 overflow-hidden">
-                    <View
-                      className="h-full bg-emerald-500"
-                      style={{
-                        width: `${
-                          item.percent ??
-                          Math.min(
-                            ((item.size ?? 0) / (1024 * 1024 * 1024)) * 100,
-                            100,
-                          )
-                        }%`,
-                      }}
-                    />
+                    <View className="mt-1 w-14 h-1.5 rounded-full bg-neutral-200 dark:bg-neutral-800 overflow-hidden">
+                      <View
+                        className="h-full bg-emerald-500"
+                        style={{
+                          width: `${
+                            item.percent ??
+                            Math.min(
+                              ((item.size ?? 0) / (1024 * 1024 * 1024)) * 100,
+                              100,
+                            )
+                          }%`,
+                        }}
+                      />
+                    </View>
                   </View>
-                </View>
+                )}
               </View>
 
               {/* Bottom */}

@@ -5,7 +5,6 @@ import * as Sharing from "expo-sharing";
 import { Platform } from "react-native";
 
 function getExtensionFromMime(mime: string): string {
-  console.log("Getting extension for mime:", mime);
   if (!mime) return "bin";
 
   if (mime.startsWith("image/")) {

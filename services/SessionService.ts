@@ -1,7 +1,10 @@
-import { storage } from "@/storage/mmkv";
+import {
+  getAccessToken,
+  getRefreshToken,
+  setAccessToken,
+} from "@/storage/mediators/system";
 import { getIp } from "@/util/getip";
 import axios from "axios";
-import SecretStorage from "../storage/SecretStorage";
 
 const ip_address = getIp();
 
@@ -34,7 +37,7 @@ class SessionService {
   }
 
   static async checkSession(): Promise<boolean> {
-    const accessToken = storage.getString("accessToken");
+    const accessToken = getAccessToken();
 
     console.log(
       "SessionService - Checking session with accessToken:",
@@ -42,7 +45,7 @@ class SessionService {
     );
     console.log(
       "SessionService - Stored tokens in SecretStorage:",
-      await SecretStorage.retrieveSecret("refreshToken"),
+      await getRefreshToken(),
     );
 
     if (accessToken) {
@@ -57,7 +60,7 @@ class SessionService {
           "Access token invalid or expired, attempting to refresh...",
         );
 
-        const refreshToken = await SecretStorage.retrieveSecret("refreshToken");
+        const refreshToken = await getRefreshToken();
         if (refreshToken && !this.#isTokenExpired(refreshToken)) {
           try {
             const res = await axios.post(
@@ -68,7 +71,7 @@ class SessionService {
             );
 
             const newAccessToken = res.data.accessToken;
-            storage.set("accessToken", newAccessToken);
+            await setAccessToken(newAccessToken);
             axios.defaults.headers.common["Authorization"] =
               `Bearer ${newAccessToken}`;
 
@@ -76,8 +79,7 @@ class SessionService {
           } catch (error) {
             console.error("Error refreshing token:", error);
 
-            // storage.clearAll();
-            // await SecretStorage.clearAllSecrets();
+            // await clearAllUserData();
 
             return false;
           }

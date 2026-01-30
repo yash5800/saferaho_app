@@ -1,6 +1,5 @@
 import SessionService from "@/services/SessionService";
-import { storage } from "@/storage/mmkv";
-import SecretStorage from "@/storage/SecretStorage";
+import { clearAllUserData } from "@/storage/mediators/system";
 import { useColorScheme } from "nativewind";
 import React from "react";
 
@@ -22,7 +21,7 @@ export const AuthContext = React.createContext<AuthContextType>({
 
 const Auth = ({ children }: AuthProps) => {
   const [isAuthenticated, setAuthenticated] = React.useState(false);
-  const { colorScheme, setColorScheme } = useColorScheme();
+  const { setColorScheme } = useColorScheme();
 
   console.log("Auth Component - Checking session status.");
 
@@ -38,9 +37,8 @@ const Auth = ({ children }: AuthProps) => {
     sessionStatus();
   }, []);
 
-  const signOut = () => {
-    storage.clearAll();
-    SecretStorage.clearAllSecrets();
+  const signOut = async () => {
+    await clearAllUserData();
     setAuthenticated(false);
     setColorScheme("system");
   };

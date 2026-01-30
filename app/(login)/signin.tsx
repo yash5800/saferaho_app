@@ -50,10 +50,6 @@ const Signin = () => {
   const { setIsLocked } = useContext(CryptoContext);
   const isDark = colorScheme === "dark";
 
-  const togglePasswordVisibility = () => {
-    setPasswordVisible(!passwordVisible);
-  };
-
   const handleSignIn = async () => {
     setInputError(null);
     setSignInLoading(true);
@@ -76,7 +72,6 @@ const Signin = () => {
       });
 
       setAuthenticated(true);
-      console.log("setting is locked to false");
       setIsLocked(false);
     }
 
@@ -122,10 +117,9 @@ const Signin = () => {
                   className="w-full rounded-xl bg-slate-200 dark:bg-slate-700 px-5 py-4 pr-12 text-base text-zinc-900 dark:text-zinc-100"
                   placeholder="Email or Username"
                   placeholderTextColor={isDark ? "#888" : "#999"}
-                  secureTextEntry={!passwordVisible}
                   autoCapitalize="none"
                   onChangeText={(t) =>
-                    setForm({ type: "SET_USER_INPUT", payload: t })
+                    setForm({ type: "SET_USER_INPUT", payload: t.trim() })
                   }
                 />
                 {inputError && inputError.field === "userInput" ? (
@@ -141,7 +135,7 @@ const Signin = () => {
                     secureTextEntry={!passwordVisible}
                     autoCapitalize="none"
                     onChangeText={(t) =>
-                      setForm({ type: "SET_PASSWORD", payload: t })
+                      setForm({ type: "SET_PASSWORD", payload: t.trim() })
                     }
                   />
                   <TouchableOpacity

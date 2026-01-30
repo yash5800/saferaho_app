@@ -1,6 +1,8 @@
 import { categeryType } from "@/app/(protected)/(tabs)/files";
 import {
+  AppWindow,
   File,
+  FileArchive,
   Heart,
   Image,
   Music,
@@ -8,32 +10,48 @@ import {
   Settings,
   Video,
 } from "lucide-react-native";
+import { useColorScheme } from "nativewind";
+import React, { useEffect } from "react";
 import { ScrollView, Text, TouchableOpacity, View } from "react-native";
 
 interface FileHeaderProps {
-  colorScheme: "light" | "dark" | undefined;
   handleSettings: () => void;
-  category: "photos" | "videos" | "documents" | "audio" | "others";
-  setCategory: React.Dispatch<
-    React.SetStateAction<"photos" | "videos" | "documents" | "audio" | "others">
-  >;
+  category: categeryType;
+  setCategory: (category: categeryType) => void;
 }
 
-const categoryList = [
-  { title: "photos", icon: Image },
-  { title: "videos", icon: Video },
-  { title: "documents", icon: File },
-  { title: "audio", icon: Music },
-  { title: "others", icon: Heart },
-];
+interface Category {
+  title: categeryType;
+  icon: React.ComponentType<{ size: number; color: string }>;
+}
 
 const FileHeader = ({
-  colorScheme,
   handleSettings,
   category,
   setCategory,
 }: FileHeaderProps) => {
+  const [categoryList, setCategoryList] = React.useState<Category[]>([
+    { title: "photos", icon: Image },
+    { title: "videos", icon: Video },
+    { title: "documents", icon: File },
+    { title: "audio", icon: Music },
+    { title: "apps", icon: AppWindow },
+    { title: "compressed", icon: FileArchive },
+    { title: "others", icon: Heart },
+  ]);
+  const { colorScheme } = useColorScheme();
   const isDark = colorScheme === "dark";
+
+  useEffect(() => {
+    if (category) {
+      setCategoryList((prev) => {
+        const selected = prev.find((cat) => cat.title === category);
+        if (!selected) return prev;
+
+        return [selected, ...prev.filter((cat) => cat.title !== category)];
+      });
+    }
+  }, [category]);
 
   return (
     <>
@@ -77,7 +95,7 @@ const FileHeader = ({
               <TouchableOpacity
                 key={cat.title}
                 activeOpacity={0.85}
-                onPress={() => setCategory(cat.title as categeryType)}
+                onPress={() => setCategory(cat.title)}
                 className={`
                   flex-row items-center gap-2 px-4 py-2 rounded-full
                   ${

@@ -3,6 +3,7 @@ import { RainProgressBar } from "@/components/RainProgressBar";
 import { UserDataContext } from "@/context/mainContext";
 import { showFloating } from "@/lib/floatingContoller";
 import { showTabBar } from "@/lib/tabBarContoller";
+import { displayToast } from "@/util/disToast";
 import {
   generateRandomId,
   uploadFilesSequentially,
@@ -124,18 +125,21 @@ const UploadOverlay = ({ sheetRef }: UploadOverlayProps) => {
   const { masterKey } = useContext(CryptoContext);
   const [uplodedFiles, setUploadedFiles] = useState<UserFiles[]>([]);
   const [isUploading, setIsUploading] = useState(false);
-  const { reload } = useContext(UserDataContext);
+  const [errorMessage, setErrorMessage] = useState("");
+  const { reload, userProfile } = useContext(UserDataContext);
+
+  console.log("Profile in UploadOverlay:", userProfile);
 
   const currentPath = useGetPath();
 
   useEffect(() => {
-    //hardware back button handling can be added here if needed
-    BackHandler.addEventListener("hardwareBackPress", () => {
-      sheetRef.current?.close();
-      showTabBar();
+    const subscribe = BackHandler.addEventListener("hardwareBackPress", () => {
+      handleBackPress();
       return true;
     });
-  }, [sheetRef]);
+
+    return () => subscribe.remove();
+  }, []);
 
   const handleFileSelect = async () => {
     setIsUploading(true);
@@ -150,7 +154,31 @@ const UploadOverlay = ({ sheetRef }: UploadOverlayProps) => {
     const formatted = filesFormater(filesMetadata);
     setUploadedFiles(formatted);
 
-    await uploadFilesSequentially(masterKey, setUploadedFiles, formatted);
+    console.log("Starting upload for files:", formatted);
+
+    const res = await uploadFilesSequentially(
+      masterKey,
+      setUploadedFiles,
+      formatted,
+      userProfile?.id || "",
+    );
+    if (!res?.status) {
+      setIsUploading(false);
+      setUploadedFiles([]);
+      setErrorMessage(
+        res?.message || "An unknown error occurred during upload.",
+      );
+
+      return;
+    }
+
+    displayToast({
+      type: "success",
+      message: res?.status
+        ? "All files uploaded successfully!"
+        : `Upload failed: ${res?.message || "Unknown error."}`,
+    });
+
     setIsUploading(false);
     reload();
   };
@@ -199,6 +227,10 @@ const UploadOverlay = ({ sheetRef }: UploadOverlayProps) => {
         <Text className="text-center text-gray-600 dark:text-gray-400 mt-5">
           Select files to encrypt and upload to your secure storage.
         </Text>
+
+        {errorMessage ? (
+          <Text className="text-center text-red-500 mt-2">{errorMessage}</Text>
+        ) : null}
 
         {/* Select Button */}
         <TouchableOpacity

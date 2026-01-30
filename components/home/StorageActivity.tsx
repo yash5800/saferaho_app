@@ -1,4 +1,5 @@
 import { UserDataContext } from "@/context/mainContext";
+import { storage } from "@/storage/mmkv";
 import { calculatePercentage } from "@/util/calculatePersentage";
 import { useFont } from "@shopify/react-native-skia";
 import { router } from "expo-router";
@@ -6,15 +7,17 @@ import { useContext, useEffect, useMemo, useState } from "react";
 import { Text, TouchableOpacity, View } from "react-native";
 import { useSharedValue, withTiming } from "react-native-reanimated";
 import CircleDonut from "../CircleDonut";
+import { getUserSubscriptionData } from "@/storage/mediators/system";
 
 const RADIUS = 60;
 const STROKE_WIDTH = 10;
-const GOALS = 5120; // 5 GB in MB
 
 const StorageActivity = () => {
   const [value, setValue] = useState(0);
   const percentage = useSharedValue(0);
   const end = useSharedValue(0);
+  const GOALS =
+    (getUserSubscriptionData()?.storage_limit_gb ?? 5) * 1024; // in MB
 
   const font = useFont(require("../../assets/fonts/Roboto-Bold.ttf"), 28);
   const { userFilesMetadata } = useContext(UserDataContext);

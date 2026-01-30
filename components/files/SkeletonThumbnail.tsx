@@ -1,3 +1,4 @@
+import { categeryType } from "@/app/(protected)/(tabs)/files";
 import { Image, Music, Video } from "lucide-react-native";
 import React, { useEffect } from "react";
 import { Animated, View, ViewStyle } from "react-native";
@@ -6,7 +7,7 @@ interface SkeletonThumbnailProps {
   width?: number;
   height?: number;
   style?: ViewStyle;
-  category?: "photos" | "videos" | "documents" | "audio" | "others";
+  category?: categeryType;
 }
 
 const SkeletonThumbnail: React.FC<SkeletonThumbnailProps> = ({

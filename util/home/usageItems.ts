@@ -32,6 +32,9 @@ function fileTypes(category: category) {
 interface usageItemsFilterProps {
   userFilesMetadata: UserFilesMetadata[];
   usageItems: {
+    percent?: number;
+    size?: number;
+    tab: string;
     name: string;
     icon: any;
     total: number;

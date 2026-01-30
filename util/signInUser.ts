@@ -1,7 +1,16 @@
+import { useMasterKey } from "@/stateshub/useMasterKey";
+import {
+  clearAllUserData,
+  setAccessToken,
+  setMasterKeyData,
+  setRefreshToken,
+  setUserProfileData,
+  setUserSettingsData,
+  setUserSubscriptionData,
+} from "@/storage/mediators/system";
 import { storage } from "@/storage/mmkv";
-import SecretStorage from "@/storage/SecretStorage";
 import axios from "axios";
-import { generateKey } from "./cryptography";
+import { decryptData, generateKey } from "./cryptography";
 import { getIp } from "./getip";
 
 interface SignInUserData {
@@ -14,8 +23,8 @@ const ip_address = getIp();
 //TODO: future update
 
 const signInUser = async (data: SignInUserData) => {
-  storage.clearAll();
-  SecretStorage.clearAllSecrets();
+  await clearAllUserData();
+  const setMasterKey = useMasterKey.getState().setMasterKey;
 
   try {
     const check1 = await axios.post(
@@ -56,23 +65,28 @@ const signInUser = async (data: SignInUserData) => {
 
         console.log("SignInUser - check2 response:", userData);
 
-        storage.set("accessToken", check2.data.tokens.accessToken);
-        storage.set("userProfile", JSON.stringify(userProfile));
+        // Storing user profile in local storage
+        setUserProfileData(userProfile);
 
-        console.log(
-          "SignInUser - Stored accessToken and userProfile in storage.",
-        );
+        // Storing plan details
+        setUserSubscriptionData({
+          plan_name: userData.plan_name,
+          storage_limit_gb: userData.storage_limit_gb,
+          subscription_status: userData.subscription_status,
+        });
 
-        //TODO : set default settings
-        storage.set(
-          "userSettings",
-          JSON.stringify({
-            darkMode: false,
-            notificationsEnabled: false,
-            biometricAuth: false,
-            // other settings can be added here like 2FA, notifications, etc.
-          }),
-        );
+        // Storing plan details
+        storage.set("userPlan", JSON.stringify({}));
+
+        //TODO: set default settings
+        setUserSettingsData({
+          darkMode: false,
+          biometricAuth: false,
+          notificationsEnabled: false,
+          // other settings can be added here like 2FA, notifications, etc.
+        });
+
+        setAccessToken(check2.data.tokens.accessToken);
 
         //TODO : store userVaultData
 
@@ -98,6 +112,12 @@ const signInUser = async (data: SignInUserData) => {
           userData.secret.pk_salt,
         );
 
+        const masterKey = await decryptData(
+          userData.secret.encryptedMasterKey,
+          passwordKey,
+        );
+        setMasterKey(masterKey);
+
         // Storing user secret data securely
         const pk_salt = userData.secret.pk_salt;
         const encryptedMasterKey = userData.secret.encryptedMasterKey;
@@ -106,24 +126,13 @@ const signInUser = async (data: SignInUserData) => {
           "SignInUser - Storing masterKeyData and refreshToken in SecretStorage.",
         );
 
-        await SecretStorage.storeSecret(
-          "masterKeyData",
-          JSON.stringify({
-            passwordKey,
-            pk_salt,
-            encryptedMasterKey,
-          }),
-        );
+        await setMasterKeyData({
+          passwordKey,
+          pk_salt,
+          encryptedMasterKey,
+        });
 
-        console.log(
-          "MasterKeyData stored in SecretStorage.",
-          await SecretStorage.retrieveSecret("masterKeyData"),
-        );
-
-        await SecretStorage.storeSecret(
-          "refreshToken",
-          check2.data.tokens.refreshToken,
-        );
+        await setRefreshToken(check2.data.tokens.refreshToken);
 
         console.log("SignInUser - Sign in process completed successfully.");
 

@@ -1,6 +1,6 @@
 import BottomSheet, {
   BottomSheetBackdrop,
-  BottomSheetView,
+  BottomSheetScrollView
 } from "@gorhom/bottom-sheet";
 import { useColorScheme } from "nativewind";
 import React, { useCallback } from "react";
@@ -58,7 +58,9 @@ const DynamicBottomSheet = ({
       animationConfigs={animationConfig}
       {...props}
     >
-      <BottomSheetView style={{ padding: 16 }}>{children}</BottomSheetView>
+      <BottomSheetScrollView style={{ padding: 16 }}>
+        {children}
+      </BottomSheetScrollView>
     </BottomSheet>
   );
 };

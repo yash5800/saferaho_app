@@ -1,34 +1,36 @@
-import CryptoService from '@/services/CryptoService';
-import React from 'react';
+import CryptoService from "@/services/CryptoService";
+import { useMasterKey } from "@/stateshub/useMasterKey";
+import React from "react";
 
 interface CryptoProps {
   children: React.ReactNode;
 }
 
 interface CryptoContextType {
-  masterKey:string | null,
-  unlock: () => Promise<boolean>,
-  lock: () => void,
-  isLocked: boolean,
-  setIsLocked: React.Dispatch<React.SetStateAction<boolean>>,
+  masterKey: string | null;
+  unlock: () => Promise<boolean>;
+  lock: () => void;
+  isLocked: boolean;
+  setIsLocked: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
 export const CryptoContext = React.createContext<CryptoContextType>({
-  masterKey: '',
+  masterKey: "",
   unlock: async () => false,
   lock: () => {},
   isLocked: true,
-  setIsLocked: () => {}
+  setIsLocked: () => {},
 });
 
 const Crypto = ({ children }: CryptoProps) => {
-  const [masterKey, setMasterKey] = React.useState<string | null>(null);
+  const { masterKey, setMasterKey } = useMasterKey((state) => state);
+
   const [isLocked, setIsLocked] = React.useState<boolean>(true);
 
   async function unlock() {
     const masterKey = await CryptoService.unlockMasterKey();
-    if(!masterKey){
-       return false;
+    if (!masterKey) {
+      return false;
     }
 
     setMasterKey(masterKey);
@@ -42,10 +44,12 @@ const Crypto = ({ children }: CryptoProps) => {
   }
 
   return (
-    <CryptoContext.Provider value={{masterKey, unlock, lock, isLocked, setIsLocked}}>
+    <CryptoContext.Provider
+      value={{ masterKey, unlock, lock, isLocked, setIsLocked }}
+    >
       {children}
     </CryptoContext.Provider>
-  )
-}
+  );
+};
 
-export default Crypto
+export default Crypto;

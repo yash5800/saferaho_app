@@ -1,5 +1,13 @@
-import { storage } from "@/storage/mmkv";
-import SecretStorage from "@/storage/SecretStorage";
+import { useMasterKey } from "@/stateshub/useMasterKey";
+import {
+  setAccessToken,
+  setMasterKeyData,
+  setRefreshToken,
+  setUserProfileData,
+  setUserSettingsData,
+  setUserSubscriptionData,
+} from "@/storage/mediators/system";
+import { UserProfileType } from "@/types/userProfile";
 import axios from "axios";
 import Aes from "react-native-aes-crypto";
 import { encryptData, generateKey, recoveryKeyGenerator } from "./cryptography";
@@ -71,6 +79,8 @@ const registerUserExists = async (
 
 //TODO: future update
 const registerUser = async (data: RegisterUserData) => {
+  const setMasterKey = useMasterKey.getState().setMasterKey;
+
   console.log("Generating authentication key...");
 
   const auth_salt = await Aes.randomKey(16);
@@ -89,6 +99,10 @@ const registerUser = async (data: RegisterUserData) => {
 
   const masterKey = await Aes.randomKey(32);
   console.log(masterKey);
+
+  setMasterKey(masterKey);
+
+  console.log("Encrypting master key...");
 
   const encryptedMasterKey = await encryptData(masterKey, passwordKey);
 
@@ -125,7 +139,7 @@ const registerUser = async (data: RegisterUserData) => {
     if (res.status === 201) {
       const userData = res.data.data;
 
-      const userProfile = {
+      const userProfile: UserProfileType = {
         userName: userData.accountName,
         email: userData.email,
         id: userData._id,
@@ -135,20 +149,25 @@ const registerUser = async (data: RegisterUserData) => {
 
       console.log("Storing user profile locally...");
 
-      storage.set("userProfile", JSON.stringify(userProfile));
+      // Storing user profile in local storage
+      setUserProfileData(userProfile);
+
+      // Storing plan details
+      setUserSubscriptionData({
+        plan_name: userData.plan_name,
+        storage_limit_gb: userData.storage_limit_gb,
+        subscription_status: userData.subscription_status,
+      });
 
       //TODO: set default settings
-      storage.set(
-        "userSettings",
-        JSON.stringify({
-          darkMode: false,
-          biometricAuth: false,
-          notificationsEnabled: false,
-          // other settings can be added here like 2FA, notifications, etc.
-        }),
-      );
+      setUserSettingsData({
+        darkMode: false,
+        biometricAuth: false,
+        notificationsEnabled: false,
+        // other settings can be added here like 2FA, notifications, etc.
+      });
 
-      storage.set("accessToken", res.data.tokens.accessToken);
+      setAccessToken(res.data.tokens.accessToken);
 
       //TODO: store userVaultData
 
@@ -160,19 +179,13 @@ const registerUser = async (data: RegisterUserData) => {
 
       console.log("Storing masterKeyData and refreshToken in SecretStorage.");
 
-      await SecretStorage.storeSecret(
-        "masterKeyData",
-        JSON.stringify({
-          passwordKey,
-          pk_salt,
-          encryptedMasterKey,
-        }),
-      );
+      await setMasterKeyData({
+        passwordKey,
+        pk_salt,
+        encryptedMasterKey,
+      });
 
-      await SecretStorage.storeSecret(
-        "refreshToken",
-        res.data.tokens.refreshToken,
-      );
+      await setRefreshToken(res.data.tokens.refreshToken);
 
       return {
         type: "success",

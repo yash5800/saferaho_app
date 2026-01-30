@@ -6,9 +6,8 @@ import {
 } from "@/context/mainContext";
 import { isPickingInProgress } from "@/globals/picking";
 import { SettingsProperties } from "@/Operations/Settings";
-import FilesMetaService, {
-  FilesMetaServiceTypes,
-} from "@/services/FileMetaService";
+import { useAccountServices } from "@/stateshub/useAccountServices";
+import { getUserProfileData } from "@/storage/mediators/system";
 import { storage } from "@/storage/mmkv";
 import { EncryptedPreviewPayload } from "@/util/filesOperations/preview";
 import { useColorScheme } from "nativewind";
@@ -37,9 +36,6 @@ const UserData = ({ children }: UserDataProps) => {
     Record<string, EncryptedPreviewPayload>
   >({});
 
-  const [filesObjects, setFilesObjects] =
-    React.useState<FilesMetaServiceTypes | null>(null);
-
   const [cryptoFailedAttempts, setCryptoFailedAttempts] = React.useState(0);
   const [showLockScreen, setShowLockScreen] = useState(false);
 
@@ -50,6 +46,7 @@ const UserData = ({ children }: UserDataProps) => {
   const initialUnlockRef = useRef(false);
   const appStateRef = useRef(AppState.currentState);
   const LOCK_TIMEOUT = 10000; // 10 seconds
+  const { initAccount, services } = useAccountServices((state) => state);
 
   useEffect(() => {
     if (!isAuthenticated) return;
@@ -79,10 +76,10 @@ const UserData = ({ children }: UserDataProps) => {
     if (!isAuthenticated) return;
 
     const storeSettings = SettingsProperties.getSettings();
-    const userProfileString = storage.getString("userProfile");
+    const userProfileString = getUserProfileData();
     if (userProfileString) {
       console.log(userProfileString);
-      setUserProfile(JSON.parse(userProfileString));
+      setUserProfile(userProfileString);
     }
     if (storeSettings) {
       setUserSettings(storeSettings);
@@ -99,38 +96,49 @@ const UserData = ({ children }: UserDataProps) => {
   }, [isAuthenticated]);
 
   useEffect(() => {
-    if (!userProfile?.id) return;
+    if (!userProfile?.id || !isAuthenticated) return;
+
+    initAccount(userProfile.id);
+
+    if (!services) return;
 
     // Fetch initial files metadata
     const fetchUserData = async () => {
-      const filesMetaService = new FilesMetaService(userProfile.id);
-      await filesMetaService.init();
-      setFilesObjects(filesMetaService);
+      const filesMetaService = services.files_meta;
+      console.log("Fetched filesMetaService:", filesMetaService);
 
-      const filesData = await filesMetaService.getFilesData();
+      if (!filesMetaService) return;
 
-      if (filesData) {
-        setUserFilesMetadata(filesData.filesCache);
-        setPreviewsByFieldId(filesData.previewMap);
+      const filesMetaData = await filesMetaService.getFiles();
+      const filesPreviews = await filesMetaService.getPreviewMap();
+
+      if (filesMetaData) {
+        setUserFilesMetadata(filesMetaData);
+        setPreviewsByFieldId(filesPreviews);
       }
     };
     fetchUserData();
 
     // TODO : implenetations of vaults can be added here
-  }, [userProfile?.id]);
+  }, [userProfile?.id, isAuthenticated, services, initAccount]);
 
   {
     /* Reload function to refresh files metadata */
   }
   const reload = async () => {
-    if (!userProfile?.id || !filesObjects) return;
+    if (!userProfile?.id) return;
 
-    const filesData = await filesObjects.refresh();
-    console.log("Files data refreshed:", filesData);
+    const filesData = await services?.files_meta.refresh();
 
-    if (filesData) {
-      setUserFilesMetadata(filesData.filesCache);
-      setPreviewsByFieldId(filesData.previewMap);
+    if (!filesData) return;
+
+    const filesMetaData = filesData.filesCache;
+    const filesPreviews = filesData.previewMap;
+    console.log("Files data refreshed:", filesMetaData, filesPreviews);
+
+    if (filesMetaData) {
+      setUserFilesMetadata(filesMetaData);
+      setPreviewsByFieldId(filesPreviews);
     }
   };
 

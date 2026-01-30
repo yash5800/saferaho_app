@@ -3,10 +3,11 @@ import SettingsOverlay from "@/components/SettingsOverlay";
 import { hideFloating, showFloating } from "@/lib/floatingContoller";
 import { hideTabBar, showTabBar } from "@/lib/tabBarContoller";
 import BottomSheet from "@gorhom/bottom-sheet";
+import { router } from "expo-router";
 import { Box, Heart, Search, Settings } from "lucide-react-native";
 import { useColorScheme } from "nativewind";
 import { useEffect, useRef, useState } from "react";
-import { Text, TouchableOpacity, View } from "react-native";
+import { BackHandler, Text, TouchableOpacity, View } from "react-native";
 import Animated, {
   runOnJS,
   useAnimatedScrollHandler,
@@ -79,6 +80,15 @@ const Vault = () => {
 
   useEffect(() => {
     if (currentPath !== "profile") showFloating();
+
+    const subscribe = BackHandler.addEventListener("hardwareBackPress", () => {
+      router.back();
+      return true;
+    });
+
+    return () => {
+      subscribe.remove();
+    };
   }, [currentPath]);
 
   const scrollHandler = useAnimatedScrollHandler((event) => {

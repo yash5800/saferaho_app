@@ -1,4 +1,8 @@
-import { storage } from "@/storage/mmkv";
+import { useAccountServices } from "@/stateshub/useAccountServices";
+import {
+  getUserProfileData,
+  getUserSubscriptionData,
+} from "@/storage/mediators/system";
 import * as FileSystem from "expo-file-system/legacy";
 import * as Random from "expo-random";
 import RNFS from "react-native-fs";
@@ -8,6 +12,7 @@ import {
   encryptChunk,
   encryptPreview,
 } from "../cryptography";
+import { displayToast } from "../disToast";
 import { getExtensionFromMime } from "../openWith";
 import { getFileSize } from "./fileSize";
 import { uploadChunkToServer, uploadPreviewToServer } from "./fileUploader";
@@ -111,9 +116,7 @@ export async function uploadEncryptedChunks(
       chunks[i].encrypted.cipher.length,
     );
     await uploadChunkToServer({
-      userId: storage.getString("userProfile")
-        ? JSON.parse(storage.getString("userProfile") || "").id
-        : "",
+      userId: getUserProfileData()?.id ?? "",
       ...filesMetadata,
       index: i,
       totalChunks: chunks.length,
@@ -141,12 +144,46 @@ export async function uploadFilesSequentially(
   masterKey: string,
   setFiles: React.Dispatch<React.SetStateAction<UserFiles[]>>,
   filesMetadata: UserFiles[],
+  userId: string,
 ) {
+  const services = useAccountServices.getState().services;
+
+  if (!services) {
+    displayToast({
+      type: "error",
+      message: "User services not available.",
+    });
+    return {
+      status: false,
+      message: "User services not available.",
+    };
+  }
+
   try {
     for (const file of filesMetadata) {
+      const storage_used = await services.storage.getUsedGB();
+      console.log(`Current storage used: ${storage_used} GB`);
+
+      const plan_limit = getUserSubscriptionData()?.storage_limit_gb;
+
+      console.log(`User plan storage limit: ${plan_limit} GB`);
+
+      if (storage_used + file.file.size / 1024 ** 3 >= plan_limit!) {
+        displayToast({
+          type: "error",
+          message: "Storage limit reached. Please upgrade your plan.",
+        });
+
+        return {
+          status: false,
+          message: "Storage limit reached. Please upgrade your plan.",
+        };
+      }
+
       console.log(
         `Starting upload for file: ${file.file.name}, file id: ${file.id}`,
       );
+
       // Encrypt file to chunks with progress callback
       setFiles((prevFiles: UserFiles[]) =>
         prevFiles.map((f) => {
@@ -186,9 +223,7 @@ export async function uploadFilesSequentially(
         );
 
         await uploadPreviewToServer({
-          userId: storage.getString("userProfile")
-            ? JSON.parse(storage.getString("userProfile") || "").id
-            : "",
+          userId: userId,
           fileId: file.id,
           ...encryptedPreviewPayload,
         });
@@ -215,9 +250,7 @@ export async function uploadFilesSequentially(
         );
 
         await uploadPreviewToServer({
-          userId: storage.getString("userProfile")
-            ? JSON.parse(storage.getString("userProfile") || "").id
-            : "",
+          userId: userId,
           fileId: file.id,
           ...encryptedPreviewPayload,
         });
@@ -304,6 +337,11 @@ export async function uploadFilesSequentially(
         ),
       );
     }
+
+    return {
+      status: true,
+      message: "All files uploaded successfully.",
+    };
   } catch (error) {
     console.error("Error uploading files:", error);
   }
