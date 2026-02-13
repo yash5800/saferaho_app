@@ -1,4 +1,5 @@
 import { categeryType } from "@/app/(protected)/(tabs)/files";
+import { LinearGradient } from "expo-linear-gradient";
 import {
   AppWindow,
   File,
@@ -56,27 +57,35 @@ const FileHeader = ({
   return (
     <>
       {/*  Header */}
-      <View className="flex-row items-center justify-between px-4 pt-4">
-        <Text className="text-2xl font-roboto-bold text-neutral-900 dark:text-white">
-          Files
-        </Text>
+      <View className="">
+        <View className="flex-row items-center justify-between px-4 pt-4">
+          <Text className="text-2xl font-roboto-bold text-neutral-900 dark:text-white">
+            Files
+          </Text>
 
-        <View className="flex-row gap-2">
-          <TouchableOpacity
-            activeOpacity={0.8}
-            className="w-10 h-10 rounded-full bg-neutral-100 dark:bg-neutral-800 items-center justify-center"
-          >
-            <Search size={18} color={isDark ? "#fff" : "#111"} />
-          </TouchableOpacity>
+          <View className="flex-row gap-2">
+            <TouchableOpacity
+              activeOpacity={0.8}
+              className="w-10 h-10 rounded-full bg-neutral-100 dark:bg-neutral-800 items-center justify-center"
+            >
+              <Search size={18} color={isDark ? "#fff" : "#111"} />
+            </TouchableOpacity>
 
-          <TouchableOpacity
-            activeOpacity={0.8}
-            onPress={handleSettings}
-            className="w-10 h-10 rounded-full bg-neutral-100 dark:bg-neutral-800 items-center justify-center"
-          >
-            <Settings size={18} color={isDark ? "#fff" : "#111"} />
-          </TouchableOpacity>
+            <TouchableOpacity
+              activeOpacity={0.8}
+              onPress={handleSettings}
+              className="w-10 h-10 rounded-full bg-neutral-100 dark:bg-neutral-800 items-center justify-center"
+            >
+              <Settings size={18} color={isDark ? "#fff" : "#111"} />
+            </TouchableOpacity>
+          </View>
         </View>
+        <LinearGradient
+          colors={isDark ? ["#6366f1", "#a855f7"] : ["#4f46e5", "#9333ea"]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+          className="h-[3px] w-16 rounded-full left-2"
+        />
       </View>
 
       {/*  Categories  */}
@@ -92,11 +101,20 @@ const FileHeader = ({
             const active = category === cat.title;
 
             return (
-              <TouchableOpacity
+              <LinearGradient
                 key={cat.title}
-                activeOpacity={0.85}
-                onPress={() => setCategory(cat.title)}
-                className={`
+                colors={
+                  isDark ? ["#312e81", "#020617"] : ["#e0e7ff", "#f5f3ff"]
+                }
+                className="p-[1px]"
+                style={{
+                  borderRadius: 64,
+                }}
+              >
+                <TouchableOpacity
+                  activeOpacity={0.85}
+                  onPress={() => setCategory(cat.title)}
+                  className={`
                   flex-row items-center gap-2 px-4 py-2 rounded-full
                   ${
                     active
@@ -104,22 +122,22 @@ const FileHeader = ({
                       : "bg-neutral-100 dark:bg-neutral-800"
                   }
                 `}
-              >
-                <Icon
-                  size={14}
-                  color={
-                    active
-                      ? isDark
-                        ? "#000"
-                        : "#fff"
-                      : isDark
-                        ? "#fff"
-                        : "#111"
-                  }
-                />
+                >
+                  <Icon
+                    size={14}
+                    color={
+                      active
+                        ? isDark
+                          ? "#000"
+                          : "#fff"
+                        : isDark
+                          ? "#fff"
+                          : "#111"
+                    }
+                  />
 
-                <Text
-                  className={`
+                  <Text
+                    className={`
                     text-sm capitalize
                     ${
                       active
@@ -129,10 +147,11 @@ const FileHeader = ({
                         : "text-neutral-700 dark:text-neutral-300"
                     }
                   `}
-                >
-                  {cat.title}
-                </Text>
-              </TouchableOpacity>
+                  >
+                    {cat.title}
+                  </Text>
+                </TouchableOpacity>
+              </LinearGradient>
             );
           })}
         </View>

@@ -8,13 +8,18 @@ import { hideTabBar, showTabBar } from "@/lib/tabBarContoller";
 import { useCategory } from "@/stateshub/useCategory";
 import BottomSheet from "@gorhom/bottom-sheet";
 import { router } from "expo-router";
-import React, { useCallback, useContext, useEffect, useState } from "react";
+import React, {
+  useCallback,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import {
   BackHandler,
   NativeScrollEvent,
   NativeSyntheticEvent,
 } from "react-native";
-import { useSharedValue } from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 export type categeryType =
@@ -30,7 +35,7 @@ const Files = () => {
   const { reload } = useContext(UserDataContext);
   const { category, setCategory } = useCategory((state) => state);
   const settingRef = React.useRef<BottomSheet>(null);
-  const lastY = useSharedValue(0);
+  const lastY = useRef(0); // Changed from useSharedValue to useRef
   const currentPath = useGetPath();
   const [refreshing, setRefreshing] = useState(false);
 
@@ -54,7 +59,7 @@ const Files = () => {
     (event: NativeSyntheticEvent<NativeScrollEvent>) => {
       const currentOffset = event.nativeEvent.contentOffset.y;
 
-      if (currentOffset > lastY.value && currentOffset > 20) {
+      if (currentOffset > lastY.current && currentOffset > 20) {
         hideFloating();
         hideTabBar();
       } else {
@@ -62,9 +67,9 @@ const Files = () => {
         showTabBar();
       }
 
-      lastY.value = currentOffset;
+      lastY.current = currentOffset;
     },
-    [lastY],
+    [],
   );
 
   const handleSettings = () => {

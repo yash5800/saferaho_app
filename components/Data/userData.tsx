@@ -7,6 +7,7 @@ import {
 import { isPickingInProgress } from "@/globals/picking";
 import { SettingsProperties } from "@/Operations/Settings";
 import { useAccountServices } from "@/stateshub/useAccountServices";
+import { useVaultItems } from "@/stateshub/useVaultItems";
 import { getUserProfileData } from "@/storage/mediators/system";
 import { storage } from "@/storage/mmkv";
 import { EncryptedPreviewPayload } from "@/util/filesOperations/preview";
@@ -47,6 +48,7 @@ const UserData = ({ children }: UserDataProps) => {
   const appStateRef = useRef(AppState.currentState);
   const LOCK_TIMEOUT = 10000; // 10 seconds
   const { initAccount, services } = useAccountServices((state) => state);
+  const { fetchVaultItems, reloadVaultItems } = useVaultItems((state) => state);
 
   useEffect(() => {
     if (!isAuthenticated) return;
@@ -105,7 +107,6 @@ const UserData = ({ children }: UserDataProps) => {
     // Fetch initial files metadata
     const fetchUserData = async () => {
       const filesMetaService = services.files_meta;
-      console.log("Fetched filesMetaService:", filesMetaService);
 
       if (!filesMetaService) return;
 
@@ -116,6 +117,8 @@ const UserData = ({ children }: UserDataProps) => {
         setUserFilesMetadata(filesMetaData);
         setPreviewsByFieldId(filesPreviews);
       }
+
+      fetchVaultItems(userProfile.id);
     };
     fetchUserData();
 
@@ -134,7 +137,7 @@ const UserData = ({ children }: UserDataProps) => {
 
     const filesMetaData = filesData.filesCache;
     const filesPreviews = filesData.previewMap;
-    console.log("Files data refreshed:", filesMetaData, filesPreviews);
+    reloadVaultItems(userProfile.id);
 
     if (filesMetaData) {
       setUserFilesMetadata(filesMetaData);

@@ -1,0 +1,33 @@
+  // const [cardDetails, setCardDetails] = useState<CardTemplateState>({
+  //   cardName: "",
+  //   nameOnCard: "",
+  //   cardNumber: "",
+  //   expiryMonth: "",
+  //   expiryYear: "",
+  //   cvv: "",
+  //   pin: "",
+  //   billingZip: "",
+  //   notes: "",
+  // });
+  // const [noteDetails, setNoteDetails] = useState<NoteTemplateState>({
+  //   title: "",
+  //   content: "",
+  //   tags: [],
+  // });
+  // const [checklistDetails, setChecklistDetails] =
+  //   useState<ChecklistTemplateState>({
+  //     title: "",
+  //     items: [],
+  //     newItem: "",
+  //   });
+  // const [identityDetails, setIdentityDetails] = useState<IdentityTemplateState>(
+  //   {
+  //     fullName: "",
+  //     idNumber: "",
+  //     issueDate: "",
+  //     expiryDate: "",
+  //     country: "",
+  //     notes: "",
+  //   },
+  // );
+

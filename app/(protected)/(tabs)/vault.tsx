@@ -1,13 +1,31 @@
 import { useGetPath } from "@/components/getPath";
 import SettingsOverlay from "@/components/SettingsOverlay";
+import WebDetails from "@/components/vault/WebDetails";
+import { UserDataContext } from "@/context/mainContext";
 import { hideFloating, showFloating } from "@/lib/floatingContoller";
 import { hideTabBar, showTabBar } from "@/lib/tabBarContoller";
+import { useVaultItems } from "@/stateshub/useVaultItems";
+import { getUserProfileData } from "@/storage/mediators/system";
 import BottomSheet from "@gorhom/bottom-sheet";
+import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
-import { Box, Heart, Search, Settings } from "lucide-react-native";
+import {
+  ChevronRight,
+  FileText,
+  Globe,
+  Search,
+  Settings,
+} from "lucide-react-native";
 import { useColorScheme } from "nativewind";
-import { useEffect, useRef, useState } from "react";
-import { BackHandler, Text, TouchableOpacity, View } from "react-native";
+import { useContext, useEffect, useRef, useState } from "react";
+import {
+  BackHandler,
+  ScrollView,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import { RefreshControl } from "react-native-gesture-handler";
 import Animated, {
   runOnJS,
   useAnimatedScrollHandler,
@@ -15,85 +33,83 @@ import Animated, {
 } from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-const groceryList = [
-  "apples",
-  "bananas",
-  "oranges",
-  "grapes",
-  "strawberries",
-  "blueberries",
-  "raspberries",
-  "blackberries",
-  "spinach",
-  "kale",
-  "lettuce",
-  "cabbage",
-  "carrots",
-  "broccoli",
-  "cauliflower",
-  "zucchini",
-  "cucumbers",
-  "tomatoes",
-  "peppers",
-  "onions",
-  "garlic",
-  "potatoes",
-  "sweet potatoes",
-  "avocados",
-  "mushrooms",
-  "milk",
-  "cheese",
-  "butter",
-  "yogurt",
-  "eggs",
-  "bacon",
-  "chicken",
-  "beef",
-  "pork",
-  "fish",
-  "shrimp",
-  "bread",
-  "rice",
-  "pasta",
-  "olive oil",
-  "honey",
-  "coffee",
-  "tea",
-  "juice",
-  "cereal",
-  "oats",
-];
+/* ================= TYPES ================= */
 
-const categoryList = [
-  { title: "All", icon: Box },
-  { title: "Favorites", icon: Heart },
-];
+export interface ResEncryptedWebsiteVaultItemsParams {
+  _id: string;
+  _createdAt: string;
+  _updatedAt: string;
+  type: "website";
+  websiteName: string;
+  websiteUrl: string;
+  encryptedSecretData: {
+    cipher: string;
+    nonce: string;
+    mac: string;
+  };
+  tags: string[];
+}
+
+export interface ResEncryptedSecureNoteVaultItemsParams {
+  _id: string;
+  _createdAt: string;
+  _updatedAt: string;
+  type: "secure_note";
+  title: string;
+  encryptedSecretData: {
+    cipher: string;
+    nonce: string;
+    mac: string;
+  };
+  tags: string[];
+}
+
+/* ================= COMPONENT ================= */
 
 const Vault = () => {
   const lastY = useSharedValue(0);
   const { colorScheme } = useColorScheme();
+
   const isDark = colorScheme === "dark";
 
-  const [activeCategory, setActiveCategory] = useState("All");
   const sheetRef = useRef<BottomSheet>(null);
+  const vaultItemsRef = useRef<BottomSheet>(null);
   const currentPath = useGetPath();
+  const userId = getUserProfileData()?.id;
+  const { data, isLoading } = useVaultItems((state) => state);
+  const { reload } = useContext(UserDataContext);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const [websitesDetails, setWebsitesDetails] = useState<
+    ResEncryptedWebsiteVaultItemsParams[]
+  >([]);
+  const [secureNotesDetails, setSecureNotesDetails] = useState<
+    ResEncryptedSecureNoteVaultItemsParams[]
+  >([]);
+
+  useEffect(() => {
+    if (!userId) return;
+
+    setWebsitesDetails(data.websitesDataCache);
+    setSecureNotesDetails(data.secureNotesDataCache);
+  }, [userId, data]);
 
   useEffect(() => {
     if (currentPath !== "profile") showFloating();
 
-    const subscribe = BackHandler.addEventListener("hardwareBackPress", () => {
+    const sub = BackHandler.addEventListener("hardwareBackPress", () => {
       router.back();
       return true;
     });
 
-    return () => {
-      subscribe.remove();
-    };
+    return () => sub.remove();
   }, [currentPath]);
 
   const scrollHandler = useAnimatedScrollHandler((event) => {
     const y = event.contentOffset.y;
     const diff = y - lastY.value;
+
+    if (currentPath !== "vault") return;
 
     if (y <= 0) {
       runOnJS(showTabBar)();
@@ -115,104 +131,184 @@ const Vault = () => {
     lastY.value = y;
   });
 
-  const handleSettingsOpen = () => {
-    hideFloating();
-    hideTabBar();
-    sheetRef.current?.expand();
+  const formatDate = (date?: string) =>
+    date
+      ? new Date(date).toLocaleDateString("en-US", {
+          month: "short",
+          day: "numeric",
+          year: "numeric",
+        })
+      : "N/A";
+
+  /* ================= UI ================= */
+
+  if (isLoading) {
+    return (
+      <SafeAreaView className="flex-1 bg-[#f4f7f8] dark:bg-[#0b0b0f] items-center justify-center">
+        <Text className="text-neutral-500 dark:text-neutral-400">
+          Loading...
+        </Text>
+      </SafeAreaView>
+    );
+  }
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    try {
+      await reload();
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
+  const handleViewItem = (id: string) => {
+    router.push(`/(protected)/${id}`);
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-[#f4f7f8] dark:bg-[#0f0f0f]">
-      <Animated.ScrollView onScroll={scrollHandler} scrollEventThrottle={16}>
-        {/*  Header  */}
-        <View className="flex-row items-center justify-between px-4 pt-4">
-          <Text className="text-2xl font-roboto-bold text-neutral-900 dark:text-white">
-            Vault
-          </Text>
+    <SafeAreaView className="flex-1 bg-[#f4f7f8] dark:bg-[#0b0b0f]">
+      <Animated.ScrollView
+        onScroll={scrollHandler}
+        scrollEventThrottle={16}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
+        }
+      >
+        {/* ===== HEADER ===== */}
+        <View className="px-4 pt-4 mb-4">
+          <View className="flex-row items-center justify-between">
+            <Text className="text-2xl font-roboto-bold text-neutral-900 dark:text-white">
+              Vault
+            </Text>
 
-          <View className="flex-row gap-2">
-            <TouchableOpacity
-              activeOpacity={0.85}
-              className="w-10 h-10 rounded-full bg-neutral-100 dark:bg-neutral-800 items-center justify-center"
-            >
-              <Search size={18} color={isDark ? "#fff" : "#111"} />
-            </TouchableOpacity>
+            <View className="flex-row gap-2">
+              {[Search, Settings].map((Icon, i) => (
+                <TouchableOpacity
+                  key={i}
+                  onPress={
+                    Icon === Settings
+                      ? () => sheetRef.current?.expand()
+                      : undefined
+                  }
+                  className="w-10 h-10 rounded-full bg-neutral-100 dark:bg-neutral-800 items-center justify-center"
+                >
+                  <Icon size={18} color={isDark ? "#fff" : "#111"} />
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
 
-            <TouchableOpacity
-              activeOpacity={0.85}
-              onPress={handleSettingsOpen}
-              className="w-10 h-10 rounded-full bg-neutral-100 dark:bg-neutral-800 items-center justify-center"
+          <LinearGradient
+            colors={isDark ? ["#6366f1", "#a855f7"] : ["#4f46e5", "#9333ea"]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            className="h-[3px] w-16 rounded-full"
+          />
+        </View>
+
+        {/* ===== SECURE NOTES ===== */}
+        {secureNotesDetails.length > 0 && (
+          <View className="mb-10">
+            <Text className="text-lg font-roboto-bold text-neutral-900 dark:text-white px-4 mb-4">
+              Secure Notes
+            </Text>
+
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              className="px-4"
             >
-              <Settings size={18} color={isDark ? "#fff" : "#111"} />
+              {secureNotesDetails.map((note, i) => (
+                <LinearGradient
+                  key={i}
+                  colors={
+                    isDark ? ["#312e81", "#020617"] : ["#e0e7ff", "#f5f3ff"]
+                  }
+                  className="w-64 h-40 mr-4 p-[1px]"
+                  style={{
+                    borderRadius: 24,
+                  }}
+                >
+                  <TouchableOpacity
+                    activeOpacity={0.75}
+                    className="flex-1 rounded-3xl p-5 bg-white/80 dark:bg-neutral-900/80 border border-indigo-200/40 dark:border-indigo-800/40 justify-between"
+                    onPress={() => handleViewItem(note._id)}
+                  >
+                    <View className="flex-row gap-3">
+                      <LinearGradient
+                        colors={["#6366f1", "#a855f7"]}
+                        className="w-10 h-10 items-center justify-center"
+                        style={{ borderRadius: 9999 }}
+                      >
+                        <FileText size={18} color="#fff" />
+                      </LinearGradient>
+
+                      <Text
+                        numberOfLines={2}
+                        className="text-sm font-roboto-bold text-neutral-900 dark:text-white flex-1"
+                      >
+                        {note.title}
+                      </Text>
+                    </View>
+
+                    <View className="flex-row items-center justify-between">
+                      <Text className="text-xs text-neutral-500 dark:text-neutral-400">
+                        {formatDate(note._createdAt)}
+                      </Text>
+
+                      <View className="w-8 h-8 rounded-full bg-indigo-500 items-center justify-center">
+                        <ChevronRight size={20} color="#fff" />
+                      </View>
+                    </View>
+                  </TouchableOpacity>
+                </LinearGradient>
+              ))}
+            </ScrollView>
+          </View>
+        )}
+
+        {/* ===== WEBSITES ===== */}
+        {websitesDetails.length > 0 && (
+          <View className="mb-8 px-4">
+            <Text className="text-lg font-roboto-bold text-neutral-900 dark:text-white mb-4">
+              Websites
+            </Text>
+
+            {websitesDetails.map((site, i) => (
+              <WebDetails key={i} details={site} />
+            ))}
+          </View>
+        )}
+
+        {/* ===== EMPTY STATE ===== */}
+        {websitesDetails.length === 0 && secureNotesDetails.length === 0 && (
+          <View className="items-center py-20 px-6">
+            <View className="w-20 h-20 rounded-full bg-neutral-200 dark:bg-neutral-800 items-center justify-center mb-4">
+              <Globe size={36} color={isDark ? "#666" : "#aaa"} />
+            </View>
+
+            <Text className="text-lg font-roboto-bold text-neutral-900 dark:text-white mb-1">
+              No Vault Items
+            </Text>
+
+            <Text className="text-sm text-neutral-500 dark:text-neutral-400 text-center mb-6">
+              Add websites or secure notes to get started
+            </Text>
+
+            <TouchableOpacity onPress={() => vaultItemsRef.current?.expand()}>
+              <LinearGradient
+                colors={["#6366f1", "#9333ea"]}
+                className="px-8 py-3"
+                style={{ borderRadius: 9999 }}
+              >
+                <Text className="text-white font-semibold text-sm">
+                  Add Item
+                </Text>
+              </LinearGradient>
             </TouchableOpacity>
           </View>
-        </View>
-
-        {/*  Categories  */}
-        <View className="flex-row gap-2 px-4 mt-5 mb-4">
-          {categoryList.map((cat) => {
-            const Icon = cat.icon;
-            const active = activeCategory === cat.title;
-
-            return (
-              <TouchableOpacity
-                key={cat.title}
-                activeOpacity={0.85}
-                onPress={() => setActiveCategory(cat.title)}
-                className={`
-                  flex-row items-center gap-2 px-4 py-2 rounded-full
-                  ${
-                    active
-                      ? "bg-neutral-900 dark:bg-white"
-                      : "bg-neutral-100 dark:bg-neutral-800"
-                  }
-                `}
-              >
-                <Icon
-                  size={14}
-                  color={
-                    active
-                      ? isDark
-                        ? "#000"
-                        : "#fff"
-                      : isDark
-                        ? "#fff"
-                        : "#111"
-                  }
-                />
-
-                <Text
-                  className={`
-                    text-sm
-                    ${
-                      active
-                        ? isDark
-                          ? "text-black"
-                          : "text-white"
-                        : "text-neutral-700 dark:text-neutral-300"
-                    }
-                  `}
-                >
-                  {cat.title}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-        </View>
-
-        {/*  List  */}
-        <View className="px-4">
-          {groceryList.map((item) => (
-            <View
-              key={item}
-              className="py-4 border-b border-neutral-200 dark:border-neutral-800"
-            >
-              <Text className="text-base text-neutral-900 dark:text-white">
-                {item}
-              </Text>
-            </View>
-          ))}
-        </View>
+        )}
       </Animated.ScrollView>
 
       <SettingsOverlay sheetRef={sheetRef} />

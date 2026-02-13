@@ -35,7 +35,7 @@ const TabBarButton = ({
         duration: 350,
       },
     );
-  }, [isFocused, scale]);
+  }, [isFocused]); // Removed 'scale' from dependencies
 
   const animatedIconStyle = useAnimatedStyle(() => {
     const scaleValue = interpolate(scale.value, [0, 1], [1, 1.1]);

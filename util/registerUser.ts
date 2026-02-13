@@ -161,13 +161,15 @@ const registerUser = async (data: RegisterUserData) => {
 
       //TODO: set default settings
       setUserSettingsData({
-        darkMode: false,
-        biometricAuth: false,
-        notificationsEnabled: false,
+        themeMode: "system",
+        enableNotifications: false,
         // other settings can be added here like 2FA, notifications, etc.
       });
 
       setAccessToken(res.data.tokens.accessToken);
+
+      axios.defaults.headers.common["Authorization"] =
+        `Bearer ${res.data.tokens.accessToken}`;
 
       //TODO: store userVaultData
 

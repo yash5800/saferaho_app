@@ -1,7 +1,7 @@
+import { UserSettings } from "@/context/mainContext";
 import { UserMasterKeyType } from "@/types/userMasterKey";
 import { UserPlanType } from "@/types/userPlan";
 import { UserProfileType } from "@/types/userProfile";
-import { UserSettingsType } from "@/types/userSettings";
 import { storage } from "../mmkv";
 import SecretStorage from "../SecretStorage";
 
@@ -42,15 +42,15 @@ export function getUserSubscriptionData(): UserPlanType | null {
 {
   /* Settings */
 }
-export function setUserSettingsData(data: UserSettingsType) {
+export function setUserSettingsData(data: UserSettings) {
   const storeData = JSON.stringify(data);
   storage.set("userSettingsData", storeData);
 }
 
-export function getUserSettingsData(): UserSettingsType | null {
+export function getUserSettingsData(): UserSettings | null {
   const data = storage.getString("userSettingsData");
   if (data) {
-    return JSON.parse(data) as UserSettingsType;
+    return JSON.parse(data) as UserSettings;
   }
   return null;
 }

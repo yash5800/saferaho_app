@@ -20,17 +20,9 @@ interface UploadChunkParams {
 }
 
 export async function uploadChunkToServer(params: UploadChunkParams) {
-  const res = await axios.post(
-    `http://${ip_address}:3002/api/upload-chunk`,
-    // {
-    //   headers: {
-    //     authorization: `Bearer ${storage.getString("authToken") || ""}`,
-    //   },
-    // },
-    {
-      data: { ...params },
-    },
-  );
+  const res = await axios.post(`http://${ip_address}:3002/api/upload-chunk`, {
+    data: { ...params },
+  });
 
   console.log("Chunk upload response status:", res.status);
 

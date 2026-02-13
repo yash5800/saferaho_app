@@ -1,4 +1,3 @@
-import { UserDataContext } from "@/context/mainContext";
 import { showFloating } from "@/lib/floatingContoller";
 import { showTabBar } from "@/lib/tabBarContoller";
 import { SettingsProperties } from "@/Operations/Settings";
@@ -7,13 +6,7 @@ import { ArrowLeft } from "lucide-react-native";
 import { useColorScheme } from "nativewind";
 import React, { useEffect, useMemo } from "react";
 import { BackHandler, Text, TouchableOpacity, View } from "react-native";
-import Animated, {
-  interpolate,
-  useAnimatedStyle,
-  useSharedValue,
-  withTiming,
-} from "react-native-reanimated";
-import { AuthContext } from "./auth/Auth";
+import Animated from "react-native-reanimated";
 
 interface SettingsOverlayProps {
   sheetRef: React.RefObject<BottomSheet | null>;
@@ -21,8 +14,6 @@ interface SettingsOverlayProps {
 
 const SettingsOverlay = ({ sheetRef }: SettingsOverlayProps) => {
   const { colorScheme, setColorScheme } = useColorScheme();
-  const { signOut } = React.useContext(AuthContext);
-  const { userSettings } = React.useContext(UserDataContext);
   const snapPoints = useMemo(() => ["100%"], []);
 
   useEffect(() => {
@@ -33,35 +24,17 @@ const SettingsOverlay = ({ sheetRef }: SettingsOverlayProps) => {
     });
   }, [sheetRef]);
 
-  const scaleL = useSharedValue(colorScheme === "light" ? 1.2 : 1);
-  const scaleD = useSharedValue(colorScheme === "dark" ? 1.2 : 1);
+  const animateScaleL = {
+    transform: [{ scale: colorScheme === "light" ? 1.2 : 1 }],
+  };
 
-  const animateScaleL = useAnimatedStyle(() => {
-    const scaleValue = interpolate(scaleL.value, [1, 1.2], [1, 1.2]);
-    return {
-      transform: [{ scale: scaleValue }],
-    };
-  });
-
-  const animateScaleD = useAnimatedStyle(() => {
-    const scaleValue = interpolate(scaleD.value, [1, 1.2], [1, 1.2]);
-    return {
-      transform: [{ scale: scaleValue }],
-    };
-  });
+  const animateScaleD = {
+    transform: [{ scale: colorScheme === "dark" ? 1.2 : 1 }],
+  };
 
   const handleThemeChange = (theme: string) => {
     setColorScheme(theme as "light" | "dark" | "system");
     SettingsProperties.settheme(theme as "light" | "dark" | "system");
-    if (theme === "light") {
-      scaleD.value = withTiming(1, { duration: 250 }, () => {
-        scaleL.value = withTiming(1.2, { duration: 250 });
-      });
-    } else {
-      scaleL.value = withTiming(1, { duration: 250 }, () => {
-        scaleD.value = withTiming(1.2, { duration: 250 });
-      });
-    }
   };
 
   const handleSettingsClose = () => {
@@ -132,12 +105,6 @@ const SettingsOverlay = ({ sheetRef }: SettingsOverlayProps) => {
               /> */}
             </View>
           </View>
-
-          <TouchableOpacity onPress={signOut}>
-            <Text className="text-red-500 mt-6 text-lg font-semibold">
-              SignOut
-            </Text>
-          </TouchableOpacity>
         </View>
       </BottomSheetScrollView>
     </BottomSheet>

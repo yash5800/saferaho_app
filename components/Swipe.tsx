@@ -1,5 +1,4 @@
 import { ArrowRight } from "lucide-react-native";
-import React from "react";
 import { View } from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import Animated, {
@@ -16,8 +15,7 @@ const BUTTON_HEIGHT = 70;
 const BUTTON_PADDING = 10;
 
 const SWIPEABLE_SIZE = BUTTON_HEIGHT - 2 * BUTTON_PADDING;
-const MAX_TRANSLATE_X =
-  BUTTON_WIDTH - 2 * BUTTON_PADDING - SWIPEABLE_SIZE;
+const MAX_TRANSLATE_X = BUTTON_WIDTH - 2 * BUTTON_PADDING - SWIPEABLE_SIZE;
 
 type SwipeProps = {
   onComplete: () => void;
@@ -36,10 +34,7 @@ const Swipe = ({ onComplete }: SwipeProps) => {
       "worklet";
       const newX = startX.value + e.translationX;
 
-      translateX.value = Math.min(
-        Math.max(newX, 0),
-        MAX_TRANSLATE_X
-      );
+      translateX.value = Math.min(Math.max(newX, 0), MAX_TRANSLATE_X);
     })
     .onEnd(() => {
       "worklet";
@@ -61,7 +56,7 @@ const Swipe = ({ onComplete }: SwipeProps) => {
       translateX.value,
       [0, MAX_TRANSLATE_X * 0.6],
       [1, 0],
-      Extrapolate.CLAMP
+      Extrapolate.CLAMP,
     ),
   }));
 

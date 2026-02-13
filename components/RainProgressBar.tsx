@@ -1,11 +1,6 @@
 import { Canvas, LinearGradient, Rect, vec } from "@shopify/react-native-skia";
-import { useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { View } from "react-native";
-import {
-  useDerivedValue,
-  useSharedValue,
-  withTiming,
-} from "react-native-reanimated";
 
 type Props = {
   progress: number; // 0–100
@@ -20,26 +15,24 @@ export function RainProgressBar({
   height = 10,
   colors = ["#22d3ee", "#3b82f6", "#6366f1", "#22d3ee"],
 }: Props) {
-  const animated = useSharedValue(0);
+  const [animated, setAnimated] = useState(0);
 
   useEffect(() => {
-    animated.value = withTiming(progress / 100, {
-      duration: 300,
-    });
+    setAnimated(progress / 100);
   }, [progress]);
 
-  // 🔹 Derived values (Reanimated only)
-  const barWidth = useDerivedValue(() => {
-    return animated.value * width;
-  });
+  // 🔹 Derived values
+  const barWidth = useMemo(() => {
+    return animated * width;
+  }, [animated, width]);
 
-  const gradientStart = useDerivedValue(() => {
-    return vec(barWidth.value - 80, 0);
-  });
+  const gradientStart = useMemo(() => {
+    return vec(barWidth - 80, 0);
+  }, [barWidth]);
 
-  const gradientEnd = useDerivedValue(() => {
-    return vec(barWidth.value + 80, 0);
-  });
+  const gradientEnd = useMemo(() => {
+    return vec(barWidth + 80, 0);
+  }, [barWidth]);
 
   return (
     <View

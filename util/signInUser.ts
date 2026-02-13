@@ -80,13 +80,15 @@ const signInUser = async (data: SignInUserData) => {
 
         //TODO: set default settings
         setUserSettingsData({
-          darkMode: false,
-          biometricAuth: false,
-          notificationsEnabled: false,
+          themeMode: "system",
+          enableNotifications: false,
           // other settings can be added here like 2FA, notifications, etc.
         });
 
         setAccessToken(check2.data.tokens.accessToken);
+
+        axios.defaults.headers.common["Authorization"] =
+          `Bearer ${check2.data.tokens.accessToken}`;
 
         //TODO : store userVaultData
 

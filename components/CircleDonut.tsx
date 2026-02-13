@@ -9,14 +9,14 @@ import {
   vec,
 } from "@shopify/react-native-skia";
 import { useColorScheme } from "nativewind";
+import { useMemo } from "react";
 import { View } from "react-native";
-import { SharedValue, useDerivedValue } from "react-native-reanimated";
 
 interface CircleDonutProps {
   Radius: number;
   StrokeWidth: number;
-  End: SharedValue<number>;
-  percentage: SharedValue<number>;
+  End: number;
+  percentage: number;
   font: SkFont;
 }
 
@@ -34,15 +34,15 @@ const CircleDonut = ({
   path.addCircle(Radius, Radius, innerRadius);
 
   /*  percentage text  */
-  const targetText = useDerivedValue(() => {
-    const v = percentage.value;
+  const targetText = useMemo(() => {
+    const v = percentage;
     return v < 10 ? `${v.toFixed(1)}%` : `${Math.round(v)}%`;
-  });
+  }, [percentage]);
 
-  const textX = useDerivedValue(() => {
-    const metrics = font.measureText(targetText.value);
+  const textX = useMemo(() => {
+    const metrics = font.measureText(targetText);
     return Radius - metrics.width / 2;
-  });
+  }, [font, targetText, Radius]);
 
   const fontMetrics = font.measureText("100%");
 

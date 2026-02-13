@@ -86,8 +86,6 @@ export const UserDataContext = createContext<UserDataContextType>({
 
 export const FloatingContext = createContext<{
   handleUpload: () => void;
-  handleVault: () => void;
 }>({
   handleUpload: () => {},
-  handleVault: () => {},
 });

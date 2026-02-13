@@ -14,6 +14,7 @@ import {
 } from "@/lib/icons";
 import { hideTabBar, showTabBar } from "@/lib/tabBarContoller";
 import { useCategory } from "@/stateshub/useCategory";
+import { useVaultItems } from "@/stateshub/useVaultItems";
 import { formatSize } from "@/util/filesOperations/fileSize";
 import { usageItemsFilter } from "@/util/home/usageItems";
 import { router } from "expo-router";
@@ -68,6 +69,7 @@ const Home = () => {
   const currentPath = useGetPath();
   const lastY = useSharedValue(0);
   const { setCategory } = useCategory((state) => state);
+  const { data: vaultData } = useVaultItems((state) => state);
 
   const [refreshing, setRefreshing] = useState(false);
   const [usageItems, setUsageItems] = useState([
@@ -121,9 +123,20 @@ const Home = () => {
       userFilesMetadata,
       usageItems,
     });
-    setUsageItems(updatedUsageItems);
+
+    // Calculate vault total
+    const vaultTotal =
+      (vaultData.websitesDataCache?.length || 0) +
+      (vaultData.secureNotesDataCache?.length || 0);
+
+    // Update vault item with actual count
+    const itemsWithVaultCount = updatedUsageItems.map((item) =>
+      item.tab === "vault" ? { ...item, total: vaultTotal } : item,
+    );
+
+    setUsageItems(itemsWithVaultCount);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [userFilesMetadata]);
+  }, [userFilesMetadata, vaultData]);
 
   useEffect(() => {
     if (currentPath !== "profile") showFloating();
@@ -157,6 +170,10 @@ const Home = () => {
     const y = event.contentOffset.y;
     const diff = y - lastY.value;
 
+    if (currentPath !== "home") {
+      return;
+    }
+
     if (y <= 0) {
       runOnJS(showTabBar)();
       runOnJS(showFloating)();
@@ -177,23 +194,46 @@ const Home = () => {
     lastY.value = y;
   });
 
-  const recentFiles = useMemo(
-    () =>
-      [...userFilesMetadata]
-        .sort(
-          (a, b) =>
-            new Date(b._createdAt).getTime() - new Date(a._createdAt).getTime(),
-        )
-        .slice(0, 3)
-        .map((file) => ({
-          id: file._id,
-          fileName: file.filename,
-          fileSize: formatSize(file.fileSize),
-          date: formatCreatedDate(file._createdAt),
-          icon: getFileIcon(file.fileType),
-        })),
-    [userFilesMetadata],
-  );
+  const recentFiles = useMemo(() => {
+    const allItems = [
+      ...userFilesMetadata.map((file) => ({
+        id: file._id,
+        name: file.filename,
+        type: "file",
+        createdAt: file._createdAt,
+        size: file.fileSize,
+        fileType: file.fileType,
+      })),
+      ...(vaultData.websitesDataCache || []).map((website) => ({
+        id: website._id,
+        name: website.websiteName,
+        type: "website",
+        createdAt: website._createdAt,
+      })),
+      ...(vaultData.secureNotesDataCache || []).map((note) => ({
+        id: note._id,
+        name: note.title,
+        type: "secure_note",
+        createdAt: note._createdAt,
+      })),
+    ];
+
+    return allItems
+      .sort(
+        (a, b) =>
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+      )
+      .slice(0, 3)
+      .map((item) => ({
+        id: item.id,
+        name: item.name,
+        type: item.type,
+        date: formatCreatedDate(item.createdAt),
+        icon: item.type === "file" ? getFileIcon(item.fileType) : vault,
+        size: item.type === "file" ? formatSize(item.size) : undefined,
+        itemType: item.type,
+      }));
+  }, [userFilesMetadata, vaultData]);
 
   const redirect = (tab: categeryType | "vault") => {
     if (tab === "vault") {
@@ -305,18 +345,18 @@ const Home = () => {
 
           {recentFiles.length === 0 ? (
             <Text className="text-sm text-neutral-500 dark:text-neutral-400">
-              No recent files yet.
+              No recent items yet.
             </Text>
           ) : (
             <View className="gap-3">
-              {recentFiles.map((file) => (
+              {recentFiles.map((item) => (
                 <View
-                  key={file.id}
+                  key={item.id}
                   className="flex-row items-center gap-4 bg-white dark:bg-neutral-900 rounded-2xl p-4 border border-neutral-200 dark:border-neutral-800"
                 >
                   <View className="w-11 h-11 rounded-xl bg-neutral-100 dark:bg-neutral-800 items-center justify-center">
                     <Image
-                      source={file.icon}
+                      source={item.icon}
                       style={{ width: 22, height: 22 }}
                     />
                   </View>
@@ -326,10 +366,21 @@ const Home = () => {
                       className="text-base font-medium dark:text-white"
                       numberOfLines={1}
                     >
-                      {file.fileName}
+                      {item.name}
                     </Text>
                     <Text className="text-xs text-neutral-500 dark:text-neutral-400">
-                      {file.fileSize} • {file.date}
+                      {item.itemType === "file" ? (
+                        <>
+                          {item.size} • {item.date}
+                        </>
+                      ) : (
+                        <>
+                          {item.itemType === "website"
+                            ? "Website"
+                            : "Secure Note"}{" "}
+                          • {item.date}
+                        </>
+                      )}
                     </Text>
                   </View>
                 </View>

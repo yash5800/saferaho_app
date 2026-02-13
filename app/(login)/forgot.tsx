@@ -2,7 +2,7 @@ import { ForgotPasswordService } from "@/services/ForgotServices";
 import { displayToast } from "@/util/disToast";
 import { Link, router } from "expo-router";
 import { ArrowLeft, Eye, EyeOff } from "lucide-react-native";
-import React from "react";
+import React, { useState } from "react";
 import {
   ActivityIndicator,
   ScrollView,
@@ -12,13 +12,8 @@ import {
   useColorScheme,
   View,
 } from "react-native";
-import Animated, {
-  useAnimatedStyle,
-  useSharedValue,
-  withTiming,
-} from "react-native-reanimated";
+import Animated from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { runOnJS } from "react-native-worklets";
 
 // hidden outer crisp response lazy crucial egg regular detect power flush staff seat wealth robust give square alpha obtain trap walk frost sponsor treat
 
@@ -48,6 +43,18 @@ function isTokenExpired(token: string): boolean {
   } catch {
     return true;
   }
+}
+
+function normalizeRecoveryInput(text: string) {
+  return (
+    text
+      // convert tabs & newlines to spaces
+      .replace(/[\t\r\n]+/g, " ")
+      // collapse multiple spaces
+      .replace(/\s{2,}/g, " ")
+      // trim edges
+      .trim()
+  );
 }
 
 const Forgot = () => {
@@ -104,45 +111,36 @@ const Forgot = () => {
     evaluateRecoveryKey(form.recoveryKey);
   }, [newPassword, form.recoveryKey]);
 
-  const opacity = useSharedValue(1);
-  const translateX = useSharedValue(0);
+  const [opacity, setOpacity] = useState(1);
+  const [translateX, setTranslateX] = useState(0);
 
-  const animatedStyle = useAnimatedStyle(() => ({
-    opacity: opacity.value,
-    transform: [{ translateX: translateX.value }],
-  }));
+  const animatedStyle = {
+    opacity: opacity,
+    transform: [{ translateX: translateX }],
+  };
 
   const switchContent = () => {
-    opacity.value = withTiming(0, { duration: 200 });
-    translateX.value = withTiming(-10, { duration: 200 }, () => {
-      runOnJS(setIsConfirmed)(true);
-
-      //Reset position
-      translateX.value = 10;
-      //Animate in
-      opacity.value = withTiming(1, { duration: 250 });
-      translateX.value = withTiming(0, { duration: 250 });
-    });
+    setOpacity(0);
+    setTranslateX(-10);
+    setIsConfirmed(true);
+    setTranslateX(10);
+    setOpacity(1);
+    setTranslateX(0);
   };
 
   const switchContentBack = () => {
-    opacity.value = withTiming(0, { duration: 200 });
-    translateX.value = withTiming(10, { duration: 200 }, () => {
-      runOnJS(setIsConfirmed)(false);
-      runOnJS(setResponseData)(null);
-      // runOnJS(setForm)({ type: 'RESET_FORM', payload: '' });
-      runOnJS(setInputError)(null);
-      runOnJS(setNewPassword)("");
-      runOnJS(setNewConfirmPassword)("");
-      runOnJS(setPasswordLevel)(0);
-      runOnJS(setRecoverLoading)(false);
-
-      //Resetposition
-      translateX.value = -10;
-      //Animate in
-      opacity.value = withTiming(1, { duration: 250 });
-      translateX.value = withTiming(0, { duration: 250 });
-    });
+    setOpacity(0);
+    setTranslateX(10);
+    setIsConfirmed(false);
+    setResponseData(null);
+    setInputError(null);
+    setNewPassword("");
+    setNewConfirmPassword("");
+    setPasswordLevel(0);
+    setRecoverLoading(false);
+    setTranslateX(-10);
+    setOpacity(1);
+    setTranslateX(0);
   };
 
   const toggleRecoveryKeyVisibility = () => {
@@ -338,11 +336,13 @@ const Forgot = () => {
                     value={newPassword}
                     onChangeText={(text) => setNewPassword(text.trim())}
                   />
-                  {passwordLevel < 3 && newPassword.length > 0 && (
-                    <Text className="text-red-600 mt-1 ml-2 text-sm">
-                      Use uppercase, lowercase, numbers, and special characters
-                    </Text>
-                  )}
+                  {passwordLevel < 3 ||
+                    (newPassword.length < 8 && (
+                      <Text className="text-red-600 mt-1 ml-2 text-sm">
+                        Use uppercase, lowercase, numbers, and special
+                        characters, minimum 8 characters.
+                      </Text>
+                    ))}
 
                   <TextInput
                     className="w-full rounded-xl bg-slate-200 dark:bg-slate-700 px-5 py-4 pr-12 text-base text-zinc-900 dark:text-zinc-100 mt-4"
@@ -351,7 +351,6 @@ const Forgot = () => {
                       colorScheme === "dark" ? "#888" : "#999"
                     }
                     autoCapitalize="none"
-                    secureTextEntry={!recoveryKeyVisible}
                     value={newConfirmPassword}
                     onChangeText={(text) => setNewConfirmPassword(text.trim())}
                   />
@@ -427,11 +426,15 @@ const Forgot = () => {
                       }
                       autoCapitalize="none"
                       secureTextEntry={!recoveryKeyVisible}
-                      multiline={!recoveryKeyVisible}
-                      numberOfLines={1}
+                      keyboardAppearance="default"
+                      multiline={true}
+                      numberOfLines={4}
                       value={form.recoveryKey}
                       onChangeText={(text) =>
-                        setForm({ type: "SET_RECOVERY_KEY", payload: text })
+                        setForm({
+                          type: "SET_RECOVERY_KEY",
+                          payload: text.replace(/[\t\r\n]+/g, " ").trim(),
+                        })
                       }
                     />
                     <TouchableOpacity
@@ -458,7 +461,7 @@ const Forgot = () => {
                   )}
                   {form.recoveryKey.trim().length > 0 && !recoverSuccess && (
                     <Text className="text-red-600 mt-1 ml-2 text-sm">
-                      Recovery key should be at least 12 words
+                      Recovery key should be at least 24 words
                     </Text>
                   )}
 

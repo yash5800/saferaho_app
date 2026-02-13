@@ -1,44 +1,7 @@
 import TabBar from "@/components/TabBar";
-import { UserDataContext } from "@/context/mainContext";
-import { hideFloating } from "@/lib/floatingContoller";
-import { useAccountServices } from "@/stateshub/useAccountServices";
 import { Tabs } from "expo-router";
-import { useContext, useEffect, useState } from "react";
-import { ActivityIndicator, Text, View } from "react-native";
 
 const TabLayout = () => {
-  const { userProfile, userFilesMetadata } = useContext(UserDataContext);
-  const [isLoading, setIsLoading] = useState(true);
-  const { initAccount, services } = useAccountServices((state) => state);
-
-  useEffect(() => {
-    // Check if user profile exists and files metadata has been loaded
-    if (!userProfile?.id) return;
-
-    initAccount(userProfile.id);
-
-    if (!services) return;
-
-    // Give a small delay to ensure all data is ready
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 500);
-
-    return () => clearTimeout(timer);
-  }, [userProfile, userFilesMetadata, services, initAccount]);
-
-  if (isLoading) {
-    hideFloating();
-    return (
-      <View className="flex-1 items-center justify-center bg-white dark:bg-gray-900">
-        <ActivityIndicator size="large" color="#3B82F6" />
-        <Text className="mt-4 text-lg text-gray-700 dark:text-gray-300">
-          Loading your data...
-        </Text>
-      </View>
-    );
-  }
-
   return (
     <Tabs tabBar={(props) => <TabBar {...props} />}>
       <Tabs.Screen

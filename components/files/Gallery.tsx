@@ -9,12 +9,6 @@ import { Search } from "lucide-react-native";
 import { useColorScheme } from "nativewind";
 import { useContext, useEffect, useRef, useState } from "react";
 import { Text, View } from "react-native";
-import {
-  runOnJS,
-  useAnimatedStyle,
-  useSharedValue,
-  withTiming,
-} from "react-native-reanimated";
 import { CryptoContext } from "../crypto/Crypto";
 import FileDoc from "./fileDoc";
 import FilePreview from "./filePreview";
@@ -200,24 +194,23 @@ const Gallery = ({
   }, [userFilesMetadata, category]);
 
   /*  full item modal  */
-  const scaleFull = useSharedValue(0);
+  const [scaleFull, setScaleFull] = useState(0);
 
-  const animatedFullStyle = useAnimatedStyle(() => ({
-    opacity: scaleFull.value,
-    transform: [{ scale: 0.95 + scaleFull.value * 0.05 }],
-  }));
+  const animatedFullStyle = {
+    opacity: scaleFull,
+    transform: [{ scale: 0.95 + scaleFull * 0.05 }],
+  };
 
   const openFullItem = (item: UserFilesMetadata) => {
     setSelectedItem(item);
-    scaleFull.value = withTiming(1, { duration: 250 });
+    setScaleFull(1);
     hideTabBar();
     hideFloating();
   };
 
   const closeFullItem = () => {
-    scaleFull.value = withTiming(0, { duration: 200 }, () => {
-      runOnJS(setSelectedItem)(null);
-    });
+    setScaleFull(0);
+    setSelectedItem(null);
     showTabBar();
     showFloating();
   };

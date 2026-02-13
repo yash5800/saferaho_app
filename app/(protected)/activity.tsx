@@ -3,7 +3,13 @@ import { UserDataContext } from "@/context/mainContext";
 import { formatSize } from "@/util/filesOperations/fileSize";
 import { usageItemsFilter } from "@/util/home/usageItems";
 import { useContext, useEffect, useMemo } from "react";
-import { BackHandler, ScrollView, Text, View } from "react-native";
+import {
+  BackHandler,
+  ScrollView,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { useGetPath } from "@/components/getPath";
@@ -18,17 +24,19 @@ import {
   videos,
 } from "@/lib/icons";
 import { router } from "expo-router";
+import { ArrowLeft } from "lucide-react-native";
+import { useColorScheme } from "nativewind";
 
 /* ---------------- constants ---------------- */
 
 const BASE_USAGE_ITEMS = [
-  { name: "Images", icon: images, total: 0 },
-  { name: "Videos", icon: videos, total: 0 },
-  { name: "Documents", icon: documents, total: 0 },
-  { name: "Music", icon: music, total: 0 },
-  { name: "Apps", icon: apps, total: 0 },
-  { name: "Compressed", icon: compressed, total: 0 },
-  { name: "Others", icon: others, total: 0 },
+  { name: "Images", icon: images, total: 0, tab: "images" },
+  { name: "Videos", icon: videos, total: 0, tab: "videos" },
+  { name: "Documents", icon: documents, total: 0, tab: "documents" },
+  { name: "Music", icon: music, total: 0, tab: "music" },
+  { name: "Apps", icon: apps, total: 0, tab: "apps" },
+  { name: "Compressed", icon: compressed, total: 0, tab: "compressed" },
+  { name: "Others", icon: others, total: 0, tab: "others" },
 ];
 
 const CATEGORY_COLORS: Record<string, string> = {
@@ -46,6 +54,7 @@ const CATEGORY_COLORS: Record<string, string> = {
 const Activity = () => {
   const { userFilesMetadata } = useContext(UserDataContext);
   const path = useGetPath();
+  const { colorScheme } = useColorScheme();
 
   useEffect(() => {
     if (path === "activity") {
@@ -90,17 +99,29 @@ const Activity = () => {
       color: CATEGORY_COLORS[item.name] ?? "#9ca3af",
     }));
 
+  const handleBackPress = () => {
+    router.back();
+  };
+
   return (
     <SafeAreaView className="flex-1 bg-[#f4f7f8] dark:bg-[#0f0f0f]">
       <ScrollView contentContainerStyle={{ paddingBottom: 40 }}>
         {/*  Header  */}
-        <View className="px-4 pt-4 mb-6">
-          <Text className="text-2xl font-roboto-bold text-neutral-900 dark:text-white">
-            Storage Activity
-          </Text>
-          <Text className="text-sm text-neutral-500 dark:text-neutral-400">
-            Category-wise storage usage
-          </Text>
+        <View className="px-4 pt-4 mb-6 flex flex-row items-center gap-4">
+          <TouchableOpacity
+            className="bg-white dark:bg-slate-700 rounded-full p-2"
+            onPress={handleBackPress}
+          >
+            <ArrowLeft color={colorScheme === "dark" ? "white" : "gray"} />
+          </TouchableOpacity>
+          <View>
+            <Text className="text-2xl font-roboto-bold text-neutral-900 dark:text-white">
+              Storage Activity
+            </Text>
+            <Text className="text-sm text-neutral-500 dark:text-neutral-400">
+              Category-wise storage usage
+            </Text>
+          </View>
         </View>
 
         {/*  Category Donut  */}

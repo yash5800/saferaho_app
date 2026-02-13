@@ -1,23 +1,20 @@
 import { UserDataContext } from "@/context/mainContext";
-import { storage } from "@/storage/mmkv";
+import { getUserSubscriptionData } from "@/storage/mediators/system";
 import { calculatePercentage } from "@/util/calculatePersentage";
 import { useFont } from "@shopify/react-native-skia";
 import { router } from "expo-router";
 import { useContext, useEffect, useMemo, useState } from "react";
 import { Text, TouchableOpacity, View } from "react-native";
-import { useSharedValue, withTiming } from "react-native-reanimated";
 import CircleDonut from "../CircleDonut";
-import { getUserSubscriptionData } from "@/storage/mediators/system";
 
 const RADIUS = 60;
 const STROKE_WIDTH = 10;
 
 const StorageActivity = () => {
   const [value, setValue] = useState(0);
-  const percentage = useSharedValue(0);
-  const end = useSharedValue(0);
-  const GOALS =
-    (getUserSubscriptionData()?.storage_limit_gb ?? 5) * 1024; // in MB
+  const [percentage, setPercentage] = useState(0);
+  const [end, setEnd] = useState(0);
+  const GOALS = (getUserSubscriptionData()?.storage_limit_gb ?? 5) * 1024; // in MB
 
   const font = useFont(require("../../assets/fonts/Roboto-Bold.ttf"), 28);
   const { userFilesMetadata } = useContext(UserDataContext);
@@ -44,8 +41,8 @@ const StorageActivity = () => {
 
   useEffect(() => {
     const percent = calculatePercentage(value, GOALS);
-    percentage.value = withTiming(percent, { duration: 900 });
-    end.value = withTiming(percent / 100, { duration: 900 });
+    setPercentage(percent);
+    setEnd(percent / 100);
   }, [value]);
 
   if (!font) {

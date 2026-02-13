@@ -3,6 +3,7 @@ import { hideFloating, registerFloating } from "@/lib/floatingContoller";
 import { hideTabBar } from "@/lib/tabBarContoller";
 import { BlurView } from "@react-native-community/blur";
 import { Extrapolate } from "@shopify/react-native-skia";
+import { router } from "expo-router";
 import { FilePlusCorner, NotebookPen, Plus } from "lucide-react-native";
 import { useColorScheme } from "nativewind";
 import { useContext, useEffect, useState } from "react";
@@ -17,27 +18,23 @@ import Animated, {
   Easing,
   interpolate,
   useAnimatedStyle,
-  useDerivedValue,
   useSharedValue,
   withDelay,
   withSpring,
   withTiming,
 } from "react-native-reanimated";
-import { useGetPath } from "./getPath";
 
 const AnimatedTouchableOpacity =
   Animated.createAnimatedComponent(TouchableOpacity);
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 const FloatingV1 = () => {
-  const { handleUpload } = useContext(FloatingContext);
+  const { handleUpload, handleVaultItems } = useContext(FloatingContext);
   const { colorScheme } = useColorScheme();
   const isDark = colorScheme === "dark";
   const firstValue = useSharedValue(100);
   const secondValue = useSharedValue(100);
-  const isOpen = useSharedValue(false);
   const [open, setOpen] = useState(false);
-  const currentPath = useGetPath();
 
   // Modern color palette
   const colors = {
@@ -49,45 +46,55 @@ const FloatingV1 = () => {
   };
 
   const floatingScale = useSharedValue(0);
+  const progress = useSharedValue(0);
 
   useEffect(() => {
     registerFloating(
       () => {
+        "worklet";
         floatingScale.value = withTiming(0, { duration: 250 });
       },
       () => {
+        "worklet";
         floatingScale.value = withTiming(1, { duration: 250 });
       },
     );
   }, [floatingScale]);
 
   const animateStyle = useAnimatedStyle(() => {
+    const scale = interpolate(
+      floatingScale.value,
+      [0, 1],
+      [0.5, 1],
+      Extrapolate.CLAMP,
+    );
     return {
-      transform: [{ scale: floatingScale.value }],
+      transform: [{ scale }],
       opacity: floatingScale.value,
+      display: floatingScale.value === 0 ? "none" : "flex",
     };
   });
 
-  const progress = useDerivedValue(() =>
-    isOpen.value ? withSpring(1) : withSpring(0),
-  );
-
   const handlePress = () => {
-    setOpen(!open);
+    const newOpenState = !open;
+    setOpen(newOpenState);
+
     const config = {
       easing: Easing.bezier(0.68, -0.6, 0.32, 1.6),
       duration: 500,
     };
 
-    if (isOpen.value) {
-      firstValue.value = withSpring(100, config);
-      secondValue.value = withDelay(100, withSpring(100, config));
-    } else {
+    if (newOpenState) {
+      // Opening
       firstValue.value = withDelay(200, withSpring(180));
       secondValue.value = withDelay(100, withSpring(240));
+      progress.value = withSpring(1);
+    } else {
+      // Closing
+      firstValue.value = withSpring(100, config);
+      secondValue.value = withDelay(100, withSpring(100, config));
+      progress.value = withSpring(0);
     }
-
-    isOpen.value = !isOpen.value;
   };
 
   const firstIcon = useAnimatedStyle(() => {
@@ -145,6 +152,13 @@ const FloatingV1 = () => {
     handleUpload();
   };
 
+  const onPressAddNotes = () => {
+    handlePress();
+    hideFloating();
+    hideTabBar();
+    router.push("/(protected)/vaultItemsInput");
+  };
+
   return (
     <View className="inset-0 absolute">
       {open && (
@@ -186,7 +200,10 @@ const FloatingV1 = () => {
         ]}
         className="absolute right-0 m-4 rounded-3xl"
       >
-        <View className="items-center justify-center w-[150px] px-3 py-2 flex-row gap-2">
+        <TouchableOpacity
+          className="items-center justify-center w-[150px] px-3 py-2 flex-row gap-2"
+          onPress={onPressAddNotes}
+        >
           <NotebookPen size={22} color={colors.text} />
           <Text
             className="text-base font-roboto-bold"
@@ -194,7 +211,7 @@ const FloatingV1 = () => {
           >
             Add Notes
           </Text>
-        </View>
+        </TouchableOpacity>
       </Animated.View>
 
       <AnimatedPressable

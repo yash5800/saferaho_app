@@ -17,20 +17,26 @@ function TabBar({ state, descriptors, navigation }: BottomTabBarProps) {
   const tabBarTranslateY = useSharedValue(0);
   const tabPositionX = useSharedValue(0);
 
+  // Register TabBar controller only once
+  useEffect(() => {
+    registerTabBar(
+      () => {
+        "worklet";
+        tabBarTranslateY.value = withTiming(120, { duration: 250 });
+      },
+      () => {
+        "worklet";
+        tabBarTranslateY.value = withTiming(0, { duration: 250 });
+      },
+    );
+  }, []);
+
+  // Handle tab position animation separately
   useEffect(() => {
     tabPositionX.value = withSpring(state.index * buttonWidth, {
       duration: 350,
     });
-
-    registerTabBar(
-      () => {
-        tabBarTranslateY.value = withTiming(120, { duration: 250 });
-      },
-      () => {
-        tabBarTranslateY.value = withTiming(0, { duration: 250 });
-      },
-    );
-  }, [state.index, buttonWidth, tabPositionX, tabBarTranslateY]);
+  }, [state.index, buttonWidth]);
 
   const onTabBarLayout = (event: LayoutChangeEvent) => {
     setDimensions({

@@ -27,6 +27,7 @@ class SessionService {
         await axios.get(`http://${ip_address}:3002/api/auth/amireal`, {
           headers: { Authorization: `Bearer ${token}` },
         });
+
         return true;
       } catch (error) {
         console.error("Error validating token:", error);
