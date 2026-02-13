@@ -17,6 +17,7 @@ import {
 import Animated, {
   Easing,
   interpolate,
+  runOnJS,
   useAnimatedStyle,
   useSharedValue,
   withDelay,
@@ -29,7 +30,7 @@ const AnimatedTouchableOpacity =
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 const FloatingV1 = () => {
-  const { handleUpload, handleVaultItems } = useContext(FloatingContext);
+  const { handleUpload } = useContext(FloatingContext);
   const { colorScheme } = useColorScheme();
   const isDark = colorScheme === "dark";
   const firstValue = useSharedValue(100);
@@ -47,16 +48,19 @@ const FloatingV1 = () => {
 
   const floatingScale = useSharedValue(0);
   const progress = useSharedValue(0);
+  const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
     registerFloating(
       () => {
         "worklet";
         floatingScale.value = withTiming(0, { duration: 250 });
+        runOnJS(setIsVisible)(false);
       },
       () => {
         "worklet";
         floatingScale.value = withTiming(1, { duration: 250 });
+        runOnJS(setIsVisible)(true);
       },
     );
   }, [floatingScale]);
@@ -71,7 +75,6 @@ const FloatingV1 = () => {
     return {
       transform: [{ scale }],
       opacity: floatingScale.value,
-      display: floatingScale.value === 0 ? "none" : "flex",
     };
   });
 
@@ -160,7 +163,10 @@ const FloatingV1 = () => {
   };
 
   return (
-    <View className="inset-0 absolute">
+    <View
+      className="inset-0 absolute"
+      pointerEvents={isVisible ? "box-none" : "none"}
+    >
       {open && (
         <BlurView
           style={styles.absolute}

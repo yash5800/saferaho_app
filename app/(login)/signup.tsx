@@ -1,29 +1,30 @@
 import { AuthContext } from "@/components/auth/Auth";
 import { CryptoContext } from "@/components/crypto/Crypto";
 import DynamicBottomSheet from "@/components/DynamicBottomSheet";
+import NetworkStatus from "@/components/network/NetworkStatus";
 import { displayToast } from "@/util/disToast";
 import { backupRecoveryKeys, recovery2Pdf } from "@/util/recovery2pdf";
 import { registerUser, registerUserExists } from "@/util/registerUser";
 import BottomSheet from "@gorhom/bottom-sheet";
 import { Link, router } from "expo-router";
 import {
-  ArrowLeft,
-  Check,
-  CloudUpload,
-  Eye,
-  EyeOff,
+    ArrowLeft,
+    Check,
+    CloudUpload,
+    Eye,
+    EyeOff,
 } from "lucide-react-native";
 import React, { useContext } from "react";
 import {
-  ActivityIndicator,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  useColorScheme,
-  View,
+    ActivityIndicator,
+    KeyboardAvoidingView,
+    Platform,
+    ScrollView,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    useColorScheme,
+    View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import valid from "validator";
@@ -247,6 +248,7 @@ const Signup = () => {
 
   return (
     <SafeAreaView className="flex-1 bg-[#dbeaea] dark:bg-[#181818]">
+      <NetworkStatus />
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === "ios" ? "padding" : "height"}

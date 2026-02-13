@@ -1,6 +1,7 @@
 import { AuthContext } from "@/components/auth/Auth";
 import { useGetPath } from "@/components/getPath";
 import GradientText from "@/components/GraidentText";
+import NetworkStatus from "@/components/network/NetworkStatus";
 import ProfileItem from "@/components/profile/ProfileItem";
 import ProfileSection from "@/components/profile/ProfileSection";
 import SettingsOverlay from "@/components/SettingsOverlay";
@@ -83,6 +84,7 @@ const Profile = () => {
 
   return (
     <SafeAreaView className="flex-1 bg-[#f4f7f8] dark:bg-[#181818]">
+      <NetworkStatus />
       <Animated.ScrollView
         className="flex-1"
         showsVerticalScrollIndicator={false}

@@ -1,20 +1,21 @@
 import { AuthContext } from "@/components/auth/Auth";
 import { CryptoContext } from "@/components/crypto/Crypto";
+import NetworkStatus from "@/components/network/NetworkStatus";
 import { displayToast } from "@/util/disToast";
 import { signInUser } from "@/util/signInUser";
 import { Link, router } from "expo-router";
 import { ArrowLeft, Eye, EyeOff } from "lucide-react-native";
 import React, { useContext } from "react";
 import {
-  ActivityIndicator,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  useColorScheme,
-  View,
+    ActivityIndicator,
+    KeyboardAvoidingView,
+    Platform,
+    ScrollView,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    useColorScheme,
+    View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -80,6 +81,7 @@ const Signin = () => {
 
   return (
     <SafeAreaView className="flex-1 bg-[#dbeaea] dark:bg-[#181818]">
+      <NetworkStatus />
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === "ios" ? "padding" : "height"}

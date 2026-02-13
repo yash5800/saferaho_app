@@ -1,11 +1,14 @@
 import FileHeader from "@/components/files/fileHeader";
 import Gallery from "@/components/files/Gallery";
 import { useGetPath } from "@/components/getPath";
+import NetworkStatus from "@/components/network/NetworkStatus";
 import SettingsOverlay from "@/components/SettingsOverlay";
 import { UserDataContext } from "@/context/mainContext";
+import { useNetwork } from "@/context/networkContext";
 import { hideFloating, showFloating } from "@/lib/floatingContoller";
 import { hideTabBar, showTabBar } from "@/lib/tabBarContoller";
 import { useCategory } from "@/stateshub/useCategory";
+import { displayToast } from "@/util/disToast";
 import BottomSheet from "@gorhom/bottom-sheet";
 import { router } from "expo-router";
 import React, {
@@ -37,6 +40,7 @@ const Files = () => {
   const settingRef = React.useRef<BottomSheet>(null);
   const lastY = useRef(0); // Changed from useSharedValue to useRef
   const currentPath = useGetPath();
+  const { isOnline } = useNetwork();
   const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
@@ -79,6 +83,15 @@ const Files = () => {
   };
 
   const handleReload = async () => {
+    if (!isOnline) {
+      displayToast({
+        message: "No Internet Connection",
+        message2: "Please check your network and try again",
+        type: "error",
+      });
+      return;
+    }
+
     setRefreshing(true);
     await reload();
     setRefreshing(false);
@@ -86,6 +99,7 @@ const Files = () => {
 
   return (
     <SafeAreaView className="flex-1 bg-[#f4f7f8] dark:bg-[#181818]">
+      <NetworkStatus />
       <Gallery
         ListHeaderComponent={() => (
           <FileHeader

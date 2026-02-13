@@ -2,6 +2,7 @@ import {
   ResEncryptedSecureNoteVaultItemsParams,
   ResEncryptedWebsiteVaultItemsParams,
 } from "@/app/(protected)/(tabs)/vault";
+import { ApiError, getErrorMessage, logError } from "@/util/errors/ApiError";
 import { getVaultItems } from "@/util/vaultOperations/ItemsGet";
 import { create } from "zustand";
 
@@ -43,14 +44,17 @@ export const useVaultItems = create<VaultItemsState>((set, get) => ({
       const response = await getVaultItems(accountId);
 
       if (!response) {
-        set({ isLoading: false, error: "No data received" });
-        return;
+        throw new Error("No vault data received from server");
       }
 
       const sortedData = response.sort(
         (
-          a: ResEncryptedWebsiteVaultItemsParams | ResEncryptedSecureNoteVaultItemsParams,
-          b: ResEncryptedWebsiteVaultItemsParams | ResEncryptedSecureNoteVaultItemsParams,
+          a:
+            | ResEncryptedWebsiteVaultItemsParams
+            | ResEncryptedSecureNoteVaultItemsParams,
+          b:
+            | ResEncryptedWebsiteVaultItemsParams
+            | ResEncryptedSecureNoteVaultItemsParams,
         ) => (a._createdAt > b._createdAt ? -1 : 1),
       );
 
@@ -97,15 +101,29 @@ export const useVaultItems = create<VaultItemsState>((set, get) => ({
           lastFetch: Date.now(),
         },
         isLoading: false,
+        error: null,
       });
+
+      console.log(`✅ Vault items fetched: ${sortedData.length} items`);
     } catch (error) {
-      set({ isLoading: false, error: (error as Error).message });
+      logError("useVaultItems.fetchVaultItems", error);
+
+      const errorMessage = getErrorMessage(error);
+
+      // Keep existing data on network errors
+      if (error instanceof ApiError && error.isNetworkError()) {
+        console.log("📡 Network error - keeping cached vault data");
+        set({ isLoading: false, error: errorMessage });
+      } else {
+        set({ isLoading: false, error: errorMessage });
+      }
     }
   },
 
   reloadVaultItems: async (accountId: string) => {
     if (!accountId) {
       set({ error: "No account ID available" });
+      logError("useVaultItems.reloadVaultItems", new Error("No account ID"));
       return;
     }
 

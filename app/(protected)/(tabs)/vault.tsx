@@ -1,11 +1,14 @@
 import { useGetPath } from "@/components/getPath";
+import NetworkStatus from "@/components/network/NetworkStatus";
 import SettingsOverlay from "@/components/SettingsOverlay";
 import WebDetails from "@/components/vault/WebDetails";
 import { UserDataContext } from "@/context/mainContext";
+import { useNetwork } from "@/context/networkContext";
 import { hideFloating, showFloating } from "@/lib/floatingContoller";
 import { hideTabBar, showTabBar } from "@/lib/tabBarContoller";
 import { useVaultItems } from "@/stateshub/useVaultItems";
 import { getUserProfileData } from "@/storage/mediators/system";
+import { displayToast } from "@/util/disToast";
 import BottomSheet from "@gorhom/bottom-sheet";
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
@@ -78,6 +81,7 @@ const Vault = () => {
   const userId = getUserProfileData()?.id;
   const { data, isLoading } = useVaultItems((state) => state);
   const { reload } = useContext(UserDataContext);
+  const { isOnline } = useNetwork();
   const [refreshing, setRefreshing] = useState(false);
 
   const [websitesDetails, setWebsitesDetails] = useState<
@@ -153,6 +157,15 @@ const Vault = () => {
   }
 
   const handleRefresh = async () => {
+    if (!isOnline) {
+      displayToast({
+        message: "No Internet Connection",
+        message2: "Please check your network and try again",
+        type: "error",
+      });
+      return;
+    }
+
     setRefreshing(true);
     try {
       await reload();
@@ -167,6 +180,7 @@ const Vault = () => {
 
   return (
     <SafeAreaView className="flex-1 bg-[#f4f7f8] dark:bg-[#0b0b0f]">
+      <NetworkStatus />
       <Animated.ScrollView
         onScroll={scrollHandler}
         scrollEventThrottle={16}

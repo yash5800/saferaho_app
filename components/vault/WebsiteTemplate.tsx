@@ -39,7 +39,7 @@ export function domainName(url: string) {
 }
 
 const FALLBACK_WEBSITE_ICON =
-  require("@/public/images/internet.png") as ImageSourcePropType;
+  require("@/public/images/internet.webp") as ImageSourcePropType;
 
 export async function getWebsiteIcon(
   url?: string | null,

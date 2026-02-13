@@ -1,16 +1,17 @@
+import NetworkStatus from "@/components/network/NetworkStatus";
 import { ForgotPasswordService } from "@/services/ForgotServices";
 import { displayToast } from "@/util/disToast";
 import { Link, router } from "expo-router";
 import { ArrowLeft, Eye, EyeOff } from "lucide-react-native";
 import React, { useState } from "react";
 import {
-  ActivityIndicator,
-  ScrollView,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  useColorScheme,
-  View,
+    ActivityIndicator,
+    ScrollView,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    useColorScheme,
+    View,
 } from "react-native";
 import Animated from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -295,6 +296,7 @@ const Forgot = () => {
 
   return (
     <SafeAreaView className="flex-1 bg-[#dbeaea] dark:bg-[#181818]">
+      <NetworkStatus />
       <ScrollView contentContainerClassName="flex-grow">
         <View className="flex-1 justify-center items-center px-4 pb-8">
           {/* back header */}

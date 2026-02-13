@@ -1,4 +1,5 @@
 import axios from "axios";
+import { ApiError, ErrorType, logError } from "../errors/ApiError";
 import { getIp } from "../getip";
 
 const ip_address = getIp();
@@ -20,17 +21,37 @@ interface UploadChunkParams {
 }
 
 export async function uploadChunkToServer(params: UploadChunkParams) {
-  const res = await axios.post(`http://${ip_address}:3002/api/upload-chunk`, {
-    data: { ...params },
-  });
+  try {
+    const res = await axios.post(
+      `http://${ip_address}:3002/api/upload-chunk`,
+      { data: { ...params } },
+      { timeout: 60000 }, // 60 seconds for upload
+    );
 
-  console.log("Chunk upload response status:", res.status);
+    console.log("Chunk upload response status:", res.status);
 
-  if (res.status !== 201) {
-    throw new Error("Chunk upload failed");
+    if (res.status !== 201) {
+      throw new ApiError({
+        type: ErrorType.SERVER_ERROR,
+        message: "Chunk upload failed",
+        statusCode: res.status,
+      });
+    }
+
+    return res.data;
+  } catch (error) {
+    logError("uploadChunkToServer", error);
+
+    if (error instanceof ApiError) {
+      throw error;
+    }
+
+    throw new ApiError({
+      type: ErrorType.SERVER_ERROR,
+      message: "Failed to upload file chunk",
+      originalError: error,
+    });
   }
-
-  return res.data;
 }
 
 export async function uploadPreviewToServer({
@@ -54,22 +75,41 @@ export async function uploadPreviewToServer({
   };
   version: string;
 }) {
-  const res = await axios.post(
-    `http://${ip_address}:3002/api/uploadFilePreview`,
-    {
-      userId,
-      fileId,
-      encryptedPreview,
-      encryptedPreviewKey,
-      version,
-    },
-  );
+  try {
+    const res = await axios.post(
+      `http://${ip_address}:3002/api/uploadFilePreview`,
+      {
+        userId,
+        fileId,
+        encryptedPreview,
+        encryptedPreviewKey,
+        version,
+      },
+      { timeout: 30000 },
+    );
 
-  console.log("Preview upload response status:", res.status);
+    console.log("Preview upload response status:", res.status);
 
-  if (res.status !== 201) {
-    throw new Error("Preview upload failed");
+    if (res.status !== 201) {
+      throw new ApiError({
+        type: ErrorType.SERVER_ERROR,
+        message: "Preview upload failed",
+        statusCode: res.status,
+      });
+    }
+
+    return res.data;
+  } catch (error) {
+    logError("uploadPreviewToServer", error);
+
+    if (error instanceof ApiError) {
+      throw error;
+    }
+
+    throw new ApiError({
+      type: ErrorType.SERVER_ERROR,
+      message: "Failed to upload file preview",
+      originalError: error,
+    });
   }
-
-  return res.data;
 }

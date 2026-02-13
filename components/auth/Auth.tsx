@@ -1,3 +1,5 @@
+import NetworkProvider from "@/components/network/NetworkProvider";
+import AxiosService from "@/services/AxiosService";
 import SessionService from "@/services/SessionService";
 import { clearAllUserData } from "@/storage/mediators/system";
 import { useColorScheme } from "nativewind";
@@ -26,6 +28,10 @@ const Auth = ({ children }: AuthProps) => {
   console.log("Auth Component - Checking session status.");
 
   React.useEffect(() => {
+    // Initialize axios interceptors on app startup
+    AxiosService.initialize();
+    AxiosService.setInitialToken();
+
     const sessionStatus = async () => {
       const status = await SessionService.checkSession();
       if (status) {
@@ -44,11 +50,13 @@ const Auth = ({ children }: AuthProps) => {
   };
 
   return (
-    <AuthContext.Provider
-      value={{ isAuthenticated, setAuthenticated, signOut: signOut }}
-    >
-      {children}
-    </AuthContext.Provider>
+    <NetworkProvider>
+      <AuthContext.Provider
+        value={{ isAuthenticated, setAuthenticated, signOut: signOut }}
+      >
+        {children}
+      </AuthContext.Provider>
+    </NetworkProvider>
   );
 };
 

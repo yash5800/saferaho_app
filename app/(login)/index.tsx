@@ -1,3 +1,4 @@
+import NetworkStatus from "@/components/network/NetworkStatus";
 import SettingsOverlay from "@/components/SettingsOverlay";
 import Swipe from "@/components/Swipe";
 import { bg3 } from "@/lib/images";
@@ -6,12 +7,12 @@ import { router } from "expo-router";
 import { Settings } from "lucide-react-native";
 import React from "react";
 import {
-  ImageBackground,
-  ScrollView,
-  Text,
-  TouchableOpacity,
-  useColorScheme,
-  View,
+    ImageBackground,
+    ScrollView,
+    Text,
+    TouchableOpacity,
+    useColorScheme,
+    View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -80,6 +81,7 @@ const Index = () => {
 
   return (
     <SafeAreaView className="flex-1 bg-[#dbeaea] dark:bg-[#181818]">
+      <NetworkStatus />
       <ScrollView contentContainerClassName="flex-1">
         <ImageBackground
           source={bg3}

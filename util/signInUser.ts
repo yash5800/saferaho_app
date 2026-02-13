@@ -1,16 +1,17 @@
 import { useMasterKey } from "@/stateshub/useMasterKey";
 import {
-  clearAllUserData,
-  setAccessToken,
-  setMasterKeyData,
-  setRefreshToken,
-  setUserProfileData,
-  setUserSettingsData,
-  setUserSubscriptionData,
+    clearAllUserData,
+    setAccessToken,
+    setMasterKeyData,
+    setRefreshToken,
+    setUserProfileData,
+    setUserSettingsData,
+    setUserSubscriptionData,
 } from "@/storage/mediators/system";
 import { storage } from "@/storage/mmkv";
 import axios from "axios";
 import { decryptData, generateKey } from "./cryptography";
+import { ApiError, logError } from "./errors/ApiError";
 import { getIp } from "./getip";
 
 interface SignInUserData {
@@ -151,6 +152,31 @@ const signInUser = async (data: SignInUserData) => {
       message: "Invalid sign in attempt",
     };
   } catch (err) {
+    logError("signInUser", err);
+
+    if (err instanceof ApiError) {
+      // Handle API errors with proper field mapping
+      if (err.statusCode === 404) {
+        return {
+          type: "error",
+          field: "userInput",
+          message: "No user found with this username or email",
+        };
+      } else if (err.statusCode === 401) {
+        return {
+          type: "error",
+          field: "password",
+          message: "Incorrect password",
+        };
+      }
+
+      // Return generic error for other API errors
+      return {
+        type: "error",
+        message: err.message,
+      };
+    }
+
     if (axios.isAxiosError(err)) {
       console.log("Axios error in signInUser:", err.response?.data);
 
@@ -173,8 +199,13 @@ const signInUser = async (data: SignInUserData) => {
         };
       }
     }
+
     console.log("Error in signInUser:", err);
-    throw err;
+
+    return {
+      type: "error",
+      message: "Failed to sign in. Please try again.",
+    };
   }
 
   // const passwordKey = await generateKey(data.email + data.password, data.pwd_salt);

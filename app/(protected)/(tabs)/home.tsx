@@ -1,6 +1,8 @@
 import { useGetPath } from "@/components/getPath";
 import StorageActivity from "@/components/home/StorageActivity";
+import NetworkStatus from "@/components/network/NetworkStatus";
 import { UserDataContext } from "@/context/mainContext";
+import { useNetwork } from "@/context/networkContext";
 import { hideFloating, showFloating } from "@/lib/floatingContoller";
 import {
   apps,
@@ -15,6 +17,7 @@ import {
 import { hideTabBar, showTabBar } from "@/lib/tabBarContoller";
 import { useCategory } from "@/stateshub/useCategory";
 import { useVaultItems } from "@/stateshub/useVaultItems";
+import { displayToast } from "@/util/disToast";
 import { formatSize } from "@/util/filesOperations/fileSize";
 import { usageItemsFilter } from "@/util/home/usageItems";
 import { router } from "expo-router";
@@ -70,6 +73,7 @@ const Home = () => {
   const lastY = useSharedValue(0);
   const { setCategory } = useCategory((state) => state);
   const { data: vaultData } = useVaultItems((state) => state);
+  const { isOnline } = useNetwork();
 
   const [refreshing, setRefreshing] = useState(false);
   const [usageItems, setUsageItems] = useState([
@@ -158,6 +162,15 @@ const Home = () => {
   }, [currentPath]);
 
   const handleRefresh = async () => {
+    if (!isOnline) {
+      displayToast({
+        message: "No Internet Connection",
+        message2: "Please check your network and try again",
+        type: "error",
+      });
+      return;
+    }
+
     setRefreshing(true);
     try {
       await reload();
@@ -229,8 +242,9 @@ const Home = () => {
         name: item.name,
         type: item.type,
         date: formatCreatedDate(item.createdAt),
-        icon: item.type === "file" ? getFileIcon(item.fileType) : vault,
-        size: item.type === "file" ? formatSize(item.size) : undefined,
+        icon:
+          item.type === "file" ? getFileIcon((item as any).fileType) : vault,
+        size: item.type === "file" ? formatSize((item as any).size) : undefined,
         itemType: item.type,
       }));
   }, [userFilesMetadata, vaultData]);
@@ -246,6 +260,7 @@ const Home = () => {
 
   return (
     <SafeAreaView className="flex-1 bg-[#f4f7f8] dark:bg-[#0f0f0f]">
+      <NetworkStatus />
       <Animated.ScrollView
         className="px-4 pt-4"
         onScroll={scrollHandler}

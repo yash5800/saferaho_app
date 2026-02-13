@@ -1,8 +1,8 @@
 import {
-  UserDataContext,
-  UserFilesMetadata,
-  UserProfile,
-  UserSettings,
+    UserDataContext,
+    UserFilesMetadata,
+    UserProfile,
+    UserSettings,
 } from "@/context/mainContext";
 import { isPickingInProgress } from "@/globals/picking";
 import { SettingsProperties } from "@/Operations/Settings";
@@ -106,42 +106,67 @@ const UserData = ({ children }: UserDataProps) => {
 
     // Fetch initial files metadata
     const fetchUserData = async () => {
-      const filesMetaService = services.files_meta;
+      try {
+        const filesMetaService = services.files_meta;
 
-      if (!filesMetaService) return;
+        if (!filesMetaService) {
+          console.error("Files meta service not available");
+          return;
+        }
 
-      const filesMetaData = await filesMetaService.getFiles();
-      const filesPreviews = await filesMetaService.getPreviewMap();
+        const filesMetaData = await filesMetaService.getFiles();
+        const filesPreviews = await filesMetaService.getPreviewMap();
 
-      if (filesMetaData) {
-        setUserFilesMetadata(filesMetaData);
-        setPreviewsByFieldId(filesPreviews);
+        if (filesMetaData) {
+          setUserFilesMetadata(filesMetaData);
+          setPreviewsByFieldId(filesPreviews);
+        }
+
+        // Fetch vault items (errors are handled internally)
+        await fetchVaultItems(userProfile.id);
+      } catch (error) {
+        console.error("Error fetching user data:", error);
+        // Don't crash the app, just log the error
+        // User can retry with pull-to-refresh
       }
-
-      fetchVaultItems(userProfile.id);
     };
-    fetchUserData();
 
-    // TODO : implenetations of vaults can be added here
+    fetchUserData();
   }, [userProfile?.id, isAuthenticated, services, initAccount]);
 
   {
     /* Reload function to refresh files metadata */
   }
   const reload = async () => {
-    if (!userProfile?.id) return;
+    if (!userProfile?.id) {
+      console.warn("Cannot reload: No user profile ID");
+      return;
+    }
 
-    const filesData = await services?.files_meta.refresh();
+    if (!services?.files_meta) {
+      console.warn("Cannot reload: Files meta service not available");
+      return;
+    }
 
-    if (!filesData) return;
+    try {
+      const filesData = await services.files_meta.refresh();
 
-    const filesMetaData = filesData.filesCache;
-    const filesPreviews = filesData.previewMap;
-    reloadVaultItems(userProfile.id);
+      if (filesData) {
+        const filesMetaData = filesData.filesCache;
+        const filesPreviews = filesData.previewMap;
 
-    if (filesMetaData) {
-      setUserFilesMetadata(filesMetaData);
-      setPreviewsByFieldId(filesPreviews);
+        setUserFilesMetadata(filesMetaData);
+        setPreviewsByFieldId(filesPreviews);
+      }
+
+      // Reload vault items (errors handled internally)
+      await reloadVaultItems(userProfile.id);
+
+      console.log("✅ Data reload completed");
+    } catch (error) {
+      console.error("Error reloading data:", error);
+      // Don't throw - let the error be handled by individual services
+      // The user will see network status indicator if offline
     }
   };
 
